@@ -177,6 +177,113 @@ Example response:
 }
 ```
 
+### `POST /home/risk/batch`
+
+Dashboard batch endpoint for up to six location and sport pairs in one request.
+Each location is calculated with the same forecast pipeline as `POST /home/risk`.
+
+Request body:
+
+- `profile: string`
+  Must be one of `ADULT`, `UNDER_10`, `AGE_10_13`, or `AGE_14_17`.
+- `locations: array`
+  Required. Length `1` to `6`. Each item contains:
+  - `sport: string`
+    Must exactly match a pythermalcomfort `Sports` enum name, for example `SOCCER`.
+  - `latitude: number`
+    Range `[-90, 90]`.
+  - `longitude: number`
+    Range `[-180, 180]`.
+
+Example request:
+
+```json
+{
+  "profile": "ADULT",
+  "locations": [
+    {
+      "sport": "SOCCER",
+      "latitude": -33.847,
+      "longitude": 151.067
+    },
+    {
+      "sport": "CROQUET",
+      "latitude": -37.813,
+      "longitude": 144.963
+    }
+  ]
+}
+```
+
+Batch response contract:
+
+- Returns HTTP `200` when the request body is valid, even if one or more locations fail.
+- `request.profile` echoes the submitted profile.
+- Each `locations[]` entry includes the submitted `sport`, coordinates, resolved
+  `timezone`, `status`, and either a `forecast[]` array or an error payload.
+- `forecast[]` uses the same point shape as `POST /home/risk`, including a
+  7-day hourly window.
+- Card metrics such as current risk or today's max should be derived on the
+  frontend from `forecast[]`.
+
+Example success item:
+
+```json
+{
+  "sport": "SOCCER",
+  "latitude": -33.847,
+  "longitude": 151.067,
+  "timezone": "Australia/Sydney",
+  "status": "ok",
+  "forecast": [
+    {
+      "time_utc": "2026-03-09T00:00:00Z",
+      "time_local": "2026-03-09T11:00:00+11:00",
+      "inputs": {
+        "air_temperature_c": 31.0,
+        "mean_radiant_temperature_c": 37.25,
+        "relative_humidity_pct": 62.0,
+        "wind_speed_10m_ms": 1.5,
+        "direct_normal_irradiance_wm2": 700.0
+      },
+      "heat_risk": {
+        "risk_level_interpolated": 1.94,
+        "t_medium": 34.5,
+        "t_high": 37.1,
+        "t_extreme": 39.2,
+        "recommendation": "Increase hydration & modify clothing"
+      }
+    }
+  ],
+  "error_code": null,
+  "detail": null
+}
+```
+
+Example per-location error item:
+
+```json
+{
+  "sport": "CROQUET",
+  "latitude": -37.813,
+  "longitude": 144.963,
+  "timezone": "Australia/Melbourne",
+  "status": "error",
+  "forecast": null,
+  "error_code": "weather_provider_unavailable",
+  "detail": "Weather provider unavailable"
+}
+```
+
+Batch-specific behaviour:
+
+- Open-Meteo is called once per chunk of locations using comma-separated
+  coordinates, with `forecast_days=7`.
+- Missing required model inputs for a location map to
+  `error_code: "unknown_inputs"` on that location instead of a top-level `422`.
+- Successful location results are cached separately from `POST /home/risk`
+  responses.
+
 ## Risk Flow
 
 1. Fetch Open-Meteo hourly weather with:
@@ -211,11 +318,18 @@ Example response:
 
 ## Caching
 
-- The risk service keeps an in-memory TTL cache keyed by:
-  `sport + profile + latitude + longitude`
+- The risk service keeps two in-memory TTL caches:
+  - Home cache keyed by `sport + profile + latitude + longitude`
+  - Batch cache keyed by `batch + sport + profile + latitude + longitude`
+- Latitude and longitude are formatted to six decimal places in both cache keys.
+  Coordinates that differ only beyond the sixth decimal share the same cache entry,
+  matching `POST /home/risk` behaviour.
 - Requests from different users will reuse cached results only when they hit the
   same backend process.
 - The cache is not shared across multiple server instances.
+- Batch requests do not populate the Home cache, and Home requests do not populate
+  the batch cache.
+- Failed batch locations are not cached; they are retried on the next request.
 
 ## Validation And Errors
 
@@ -224,6 +338,11 @@ Example response:
   forecast point; in that case the error payload uses the earliest candidate row and includes:
   - `unknown_inputs`
   - `available_inputs`
+- For `POST /home/risk/batch`, per-location failures return HTTP `200` with
+  `status: "error"` and a stable `error_code` such as:
+  - `weather_provider_unavailable`
+  - `unknown_inputs`
+  - `risk_calculation_failed`
 - Upstream weather failures return `502` with:
   `{"detail": "Weather provider unavailable", "error_code": "weather_provider_unavailable"}`.
 - Retryable Open-Meteo failures are retried once after `0.25` seconds; each

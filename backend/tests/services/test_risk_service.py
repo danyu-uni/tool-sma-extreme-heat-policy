@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 
 import pandas as pd
@@ -9,8 +10,17 @@ from sma_extreme_heat_backend.calculators.sports_heat_stress import (
     SportsHeatStressInput,
     SportsHeatStressOutput,
 )
-from sma_extreme_heat_backend.clients.open_meteo import HourlyWeatherPoint, WeatherForecast
-from sma_extreme_heat_backend.core.errors import ModelInputUnavailableError
+from sma_extreme_heat_backend.clients.open_meteo import (
+    HourlyWeatherPoint,
+    LocationWeatherFetchResult,
+    WeatherForecast,
+)
+from sma_extreme_heat_backend.core.errors import ModelInputUnavailableError, WeatherProviderError
+from sma_extreme_heat_backend.schemas.batch import (
+    BatchRiskLocationRequest,
+    BatchRiskLocationStatus,
+    BatchRiskRequest,
+)
 from sma_extreme_heat_backend.schemas.home import RiskRequest
 from sma_extreme_heat_backend.services.risk_service import RiskService
 
@@ -93,6 +103,26 @@ class FakeCalculator:
         )
 
 
+class PerPointRiskCalculator(FakeCalculator):
+    """Calculator double keyed by air temperature for location-independent batch tests."""
+
+    def model_sports_heat_stress(self, payload: SportsHeatStressInput) -> SportsHeatStressOutput:
+        self.calls += 1
+        self.payloads.append(payload)
+        return SportsHeatStressOutput(
+            data={
+                "risk_level_interpolated": round(1.84 + ((payload.tdb - 30.0) * 0.1), 2),
+                "t_medium": 34.5,
+                "t_high": 37.1,
+                "t_extreme": 39.2,
+                "recommendation": "Increase hydration & modify clothing",
+            },
+            meta={
+                "model": "pythermalcomfort.models.sports_heat_stress_risk",
+            },
+        )
+
+
 def _build_mrt_dataframe(
     *,
     timezone_name: str = "Australia/Sydney",
@@ -134,6 +164,67 @@ def _build_mrt_dataframe(
         rows.append(row)
 
     return pd.DataFrame(rows, index=index_local)
+
+
+def _expected_three_point_forecast_json() -> list[dict]:
+    """Return the shared 3-point forecast JSON used by home and batch service tests."""
+
+    return [
+        {
+            "time_utc": "2026-03-09T00:00:00Z",
+            "time_local": "2026-03-09T11:00:00+11:00",
+            "inputs": {
+                "air_temperature_c": 31.0,
+                "mean_radiant_temperature_c": 37.25,
+                "relative_humidity_pct": 62.0,
+                "wind_speed_10m_ms": 1.5,
+                "direct_normal_irradiance_wm2": 700.0,
+            },
+            "heat_risk": {
+                "risk_level_interpolated": 1.94,
+                "t_medium": 34.5,
+                "t_high": 37.1,
+                "t_extreme": 39.2,
+                "recommendation": "Increase hydration & modify clothing",
+            },
+        },
+        {
+            "time_utc": "2026-03-09T01:00:00Z",
+            "time_local": "2026-03-09T12:00:00+11:00",
+            "inputs": {
+                "air_temperature_c": 32.0,
+                "mean_radiant_temperature_c": 38.25,
+                "relative_humidity_pct": 63.0,
+                "wind_speed_10m_ms": 1.6,
+                "direct_normal_irradiance_wm2": 750.0,
+            },
+            "heat_risk": {
+                "risk_level_interpolated": 2.04,
+                "t_medium": 34.5,
+                "t_high": 37.1,
+                "t_extreme": 39.2,
+                "recommendation": "Increase hydration & modify clothing",
+            },
+        },
+        {
+            "time_utc": "2026-03-09T02:00:00Z",
+            "time_local": "2026-03-09T13:00:00+11:00",
+            "inputs": {
+                "air_temperature_c": 33.0,
+                "mean_radiant_temperature_c": 39.25,
+                "relative_humidity_pct": 64.0,
+                "wind_speed_10m_ms": 1.7,
+                "direct_normal_irradiance_wm2": 800.0,
+            },
+            "heat_risk": {
+                "risk_level_interpolated": 2.14,
+                "t_medium": 34.5,
+                "t_high": 37.1,
+                "t_extreme": 39.2,
+                "recommendation": "Increase hydration & modify clothing",
+            },
+        },
+    ]
 
 
 def _install_mrt_pipeline(
@@ -205,62 +296,40 @@ async def test_risk_service_uses_ttl_cache_for_same_input(
         "t_extreme": 39.2,
         "recommendation": "Increase hydration & modify clothing",
     }
-    assert first.model_dump(mode="json")["forecast"] == [
-        {
-            "time_utc": "2026-03-09T00:00:00Z",
-            "time_local": "2026-03-09T11:00:00+11:00",
-            "inputs": {
-                "air_temperature_c": 31.0,
-                "mean_radiant_temperature_c": 37.25,
-                "relative_humidity_pct": 62.0,
-                "wind_speed_10m_ms": 1.5,
-                "direct_normal_irradiance_wm2": 700.0,
-            },
-            "heat_risk": {
-                "risk_level_interpolated": 1.94,
-                "t_medium": 34.5,
-                "t_high": 37.1,
-                "t_extreme": 39.2,
-                "recommendation": "Increase hydration & modify clothing",
-            },
-        },
-        {
-            "time_utc": "2026-03-09T01:00:00Z",
-            "time_local": "2026-03-09T12:00:00+11:00",
-            "inputs": {
-                "air_temperature_c": 32.0,
-                "mean_radiant_temperature_c": 38.25,
-                "relative_humidity_pct": 63.0,
-                "wind_speed_10m_ms": 1.6,
-                "direct_normal_irradiance_wm2": 750.0,
-            },
-            "heat_risk": {
-                "risk_level_interpolated": 2.04,
-                "t_medium": 34.5,
-                "t_high": 37.1,
-                "t_extreme": 39.2,
-                "recommendation": "Increase hydration & modify clothing",
-            },
-        },
-        {
-            "time_utc": "2026-03-09T02:00:00Z",
-            "time_local": "2026-03-09T13:00:00+11:00",
-            "inputs": {
-                "air_temperature_c": 33.0,
-                "mean_radiant_temperature_c": 39.25,
-                "relative_humidity_pct": 64.0,
-                "wind_speed_10m_ms": 1.7,
-                "direct_normal_irradiance_wm2": 800.0,
-            },
-            "heat_risk": {
-                "risk_level_interpolated": 2.14,
-                "t_medium": 34.5,
-                "t_high": 37.1,
-                "t_extreme": 39.2,
-                "recommendation": "Increase hydration & modify clothing",
-            },
-        },
-    ]
+    assert first.model_dump(mode="json")["forecast"] == _expected_three_point_forecast_json()
+
+
+async def test_risk_service_batch_cache_expires_after_ttl(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Expired dashboard summaries should be recomputed on the next request."""
+
+    import sma_extreme_heat_backend.services.risk_service as risk_service_module
+
+    clock = {"now": 1_000.0}
+    monkeypatch.setattr(risk_service_module.time, "monotonic", lambda: clock["now"])
+    weather_client = BatchWeatherClient()
+    calculator = PerPointRiskCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    monkeypatch.setattr(
+        "sma_extreme_heat_backend.services.risk_service.resolve_timezone_name",
+        lambda **kwargs: _timezone_for_longitude(kwargs["longitude"]),
+    )
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=10,
+    )
+    payload = BatchRiskRequest(
+        profile="ADULT",
+        locations=[BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067)],
+    )
+
+    await service.calculate_home_risk_batch(payload)
+    clock["now"] = 1_011.0
+    await service.calculate_home_risk_batch(payload)
+
+    assert weather_client.batch_calls == 2
 
 
 async def test_risk_service_cache_key_changes_with_coordinates(
@@ -591,3 +660,454 @@ async def test_risk_service_raises_422_when_no_complete_forecast_point_exists(
         }
     else:
         raise AssertionError("Expected ModelInputUnavailableError")
+
+
+class BatchWeatherClient:
+    """Weather client double that can fail for selected coordinates."""
+
+    def __init__(self, *, failing_longitudes: set[float] | None = None) -> None:
+        self.calls = 0
+        self.home_calls = 0
+        self.batch_calls = 0
+        self.failing_longitudes = failing_longitudes or set()
+        base_time = datetime(2026, 3, 9, 0, 0, tzinfo=UTC)
+        self.points = [
+            HourlyWeatherPoint(
+                time_utc=base_time + timedelta(hours=offset),
+                tdb=31.0 + offset,
+                rh=62.0 + offset,
+                wind=1.5 + (offset * 0.1),
+                radiation=700.0 + (offset * 50.0),
+            )
+            for offset in range(3)
+        ]
+
+    async def fetch_weather_forecast(
+        self,
+        *,
+        latitude: float,
+        longitude: float,
+        timezone_name: str,
+    ) -> WeatherForecast:
+        self.calls += 1
+        self.home_calls += 1
+        await asyncio.sleep(0)
+        if longitude in self.failing_longitudes:
+            raise WeatherProviderError()
+        return WeatherForecast(points=self.points)
+
+    async def fetch_weather_forecast_batch(
+        self,
+        *,
+        locations,
+    ) -> list[LocationWeatherFetchResult]:
+        self.calls += 1
+        self.batch_calls += 1
+        await asyncio.sleep(0)
+        results = []
+        for location in locations:
+            if location.longitude in self.failing_longitudes:
+                results.append(LocationWeatherFetchResult.failure(WeatherProviderError()))
+                continue
+            results.append(LocationWeatherFetchResult.success(WeatherForecast(points=self.points)))
+        return results
+
+    async def aclose(self) -> None:
+        return None
+
+
+def _timezone_for_longitude(longitude: float) -> str:
+    if abs(longitude - 144.963) < 0.001:
+        return "Australia/Melbourne"
+    return "Australia/Sydney"
+
+
+async def test_risk_service_batch_returns_summary_for_multiple_locations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Batch summaries should expose current and today's max risk per location."""
+
+    weather_client = BatchWeatherClient()
+    calculator = PerPointRiskCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    monkeypatch.setattr(
+        "sma_extreme_heat_backend.services.risk_service.resolve_timezone_name",
+        lambda **kwargs: _timezone_for_longitude(kwargs["longitude"]),
+    )
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+
+    response = await service.calculate_home_risk_batch(
+        BatchRiskRequest(
+            profile="ADULT",
+            locations=[
+                BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067),
+                BatchRiskLocationRequest(sport="SOCCER", latitude=-37.813, longitude=144.963),
+            ],
+        )
+    )
+
+    assert response.request.model_dump() == {
+        "profile": "ADULT",
+    }
+    assert len(response.locations) == 2
+    assert response.locations[0].model_dump(mode="json") == {
+        "sport": "SOCCER",
+        "latitude": -33.847,
+        "longitude": 151.067,
+        "timezone": "Australia/Sydney",
+        "status": "ok",
+        "forecast": _expected_three_point_forecast_json(),
+        "error_code": None,
+        "detail": None,
+    }
+    assert response.locations[1].status == BatchRiskLocationStatus.OK
+    assert response.locations[1].forecast is not None
+    assert len(response.locations[1].forecast) == 3
+    assert weather_client.calls == 1
+
+
+async def test_risk_service_batch_supports_different_sports_per_location(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each batch location should use its own sport when building forecasts."""
+
+    weather_client = BatchWeatherClient()
+    calculator = PerPointRiskCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    monkeypatch.setattr(
+        "sma_extreme_heat_backend.services.risk_service.resolve_timezone_name",
+        lambda **kwargs: _timezone_for_longitude(kwargs["longitude"]),
+    )
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+
+    response = await service.calculate_home_risk_batch(
+        BatchRiskRequest(
+            profile="ADULT",
+            locations=[
+                BatchRiskLocationRequest(
+                    sport="SOCCER",
+                    latitude=-33.847,
+                    longitude=151.067,
+                ),
+                BatchRiskLocationRequest(
+                    sport="CROQUET",
+                    latitude=-33.847,
+                    longitude=151.067,
+                ),
+            ],
+        )
+    )
+
+    assert response.locations[0].sport == "SOCCER"
+    assert response.locations[1].sport == "CROQUET"
+    assert response.locations[0].status == BatchRiskLocationStatus.OK
+    assert response.locations[1].status == BatchRiskLocationStatus.OK
+    assert {payload.sport for payload in calculator.payloads} == {"SOCCER", "CROQUET"}
+    assert all(payload.sport == "SOCCER" for payload in calculator.payloads[:3])
+    assert all(payload.sport == "CROQUET" for payload in calculator.payloads[3:6])
+
+
+async def test_risk_service_batch_returns_partial_errors_without_failing_whole_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One upstream failure should not prevent other locations from returning data."""
+
+    weather_client = BatchWeatherClient(failing_longitudes={144.963})
+    calculator = FakeCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    monkeypatch.setattr(
+        "sma_extreme_heat_backend.services.risk_service.resolve_timezone_name",
+        lambda **kwargs: _timezone_for_longitude(kwargs["longitude"]),
+    )
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+
+    response = await service.calculate_home_risk_batch(
+        BatchRiskRequest(
+            profile="ADULT",
+            locations=[
+                BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067),
+                BatchRiskLocationRequest(sport="SOCCER", latitude=-37.813, longitude=144.963),
+            ],
+        )
+    )
+
+    assert response.locations[0].status == BatchRiskLocationStatus.OK
+    assert response.locations[1].model_dump(mode="json") == {
+        "sport": "SOCCER",
+        "latitude": -37.813,
+        "longitude": 144.963,
+        "timezone": "Australia/Melbourne",
+        "status": "error",
+        "forecast": None,
+        "error_code": "weather_provider_unavailable",
+        "detail": "Weather provider unavailable",
+    }
+
+
+async def test_risk_service_batch_fetches_duplicate_coordinates_in_one_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated coordinates in one batch should use one multi-location weather fetch."""
+
+    weather_client = BatchWeatherClient()
+    calculator = PerPointRiskCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+
+    await service.calculate_home_risk_batch(
+        BatchRiskRequest(
+            profile="ADULT",
+            locations=[
+                BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067),
+                BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067),
+            ],
+        )
+    )
+
+    assert weather_client.calls == 1
+    assert calculator.calls == 6
+
+
+async def test_risk_service_batch_uses_ttl_cache_for_successful_summaries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated batch requests should reuse successful summaries within the TTL."""
+
+    weather_client = BatchWeatherClient()
+    calculator = PerPointRiskCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    monkeypatch.setattr(
+        "sma_extreme_heat_backend.services.risk_service.resolve_timezone_name",
+        lambda **kwargs: _timezone_for_longitude(kwargs["longitude"]),
+    )
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+    payload = BatchRiskRequest(
+        profile="ADULT",
+        locations=[
+            BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067),
+            BatchRiskLocationRequest(sport="SOCCER", latitude=-37.813, longitude=144.963),
+        ],
+    )
+
+    first = await service.calculate_home_risk_batch(payload)
+    second = await service.calculate_home_risk_batch(payload)
+
+    assert weather_client.batch_calls == 1
+    assert calculator.calls == 6
+    assert first.locations == second.locations
+    assert first.locations[0].status == BatchRiskLocationStatus.OK
+    assert first.locations[1].status == BatchRiskLocationStatus.OK
+
+
+async def test_risk_service_batch_cache_key_uses_home_coordinate_formatting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Batch cache keys should round coordinates to six decimals like `/home/risk`."""
+
+    weather_client = BatchWeatherClient()
+    calculator = PerPointRiskCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    monkeypatch.setattr(
+        "sma_extreme_heat_backend.services.risk_service.resolve_timezone_name",
+        lambda **kwargs: _timezone_for_longitude(kwargs["longitude"]),
+    )
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+    first_latitude = -33.8470001
+    second_latitude = -33.8470004
+    longitude = 151.067
+    assert first_latitude != second_latitude
+    assert f"{first_latitude:.6f}" == f"{second_latitude:.6f}"
+    payload = BatchRiskRequest(
+        profile="ADULT",
+        locations=[
+            BatchRiskLocationRequest(sport="SOCCER", latitude=first_latitude, longitude=longitude),
+            BatchRiskLocationRequest(sport="SOCCER", latitude=second_latitude, longitude=longitude),
+        ],
+    )
+
+    first = await service.calculate_home_risk_batch(payload)
+    second = await service.calculate_home_risk_batch(payload)
+
+    assert weather_client.batch_calls == 1
+    assert first.locations[0].latitude == first_latitude
+    assert first.locations[1].latitude == second_latitude
+    assert RiskService._batch_cache_key(
+        sport="SOCCER",
+        profile="ADULT",
+        latitude=first_latitude,
+        longitude=longitude,
+    ) == RiskService._batch_cache_key(
+        sport="SOCCER",
+        profile="ADULT",
+        latitude=second_latitude,
+        longitude=longitude,
+    )
+    assert second.locations[0] == second.locations[1]
+
+
+async def test_risk_service_batch_does_not_cache_location_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Failed locations should be retried on the next batch request."""
+
+    weather_client = BatchWeatherClient(failing_longitudes={144.963})
+    calculator = FakeCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    monkeypatch.setattr(
+        "sma_extreme_heat_backend.services.risk_service.resolve_timezone_name",
+        lambda **kwargs: _timezone_for_longitude(kwargs["longitude"]),
+    )
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+    payload = BatchRiskRequest(
+        profile="ADULT",
+        locations=[
+            BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067),
+            BatchRiskLocationRequest(sport="SOCCER", latitude=-37.813, longitude=144.963),
+        ],
+    )
+
+    first = await service.calculate_home_risk_batch(payload)
+    second = await service.calculate_home_risk_batch(payload)
+
+    assert first.locations[0].status == BatchRiskLocationStatus.OK
+    assert first.locations[1].status == BatchRiskLocationStatus.ERROR
+    assert second.locations[0].status == BatchRiskLocationStatus.OK
+    assert second.locations[1].status == BatchRiskLocationStatus.ERROR
+    assert weather_client.batch_calls == 2
+
+
+async def test_risk_service_batch_cache_does_not_populate_home_risk_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cached dashboard summary must not satisfy a seven-day home risk request."""
+
+    weather_client = BatchWeatherClient()
+    calculator = PerPointRiskCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    monkeypatch.setattr(
+        "sma_extreme_heat_backend.services.risk_service.resolve_timezone_name",
+        lambda **kwargs: _timezone_for_longitude(kwargs["longitude"]),
+    )
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+
+    await service.calculate_home_risk_batch(
+        BatchRiskRequest(
+            profile="ADULT",
+            locations=[
+                BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067)
+            ],
+        )
+    )
+    await service.calculate_home_risk(
+        RiskRequest(
+            sport="SOCCER",
+            latitude=-33.847,
+            longitude=151.067,
+            profile="ADULT",
+        )
+    )
+
+    assert weather_client.batch_calls == 1
+    assert weather_client.home_calls == 1
+
+
+async def test_risk_service_batch_maps_missing_inputs_to_unknown_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Missing model inputs should map to a per-location unknown_inputs error."""
+
+    weather_client = BatchWeatherClient()
+    calculator = PerPointRiskCalculator()
+    _install_mrt_pipeline(
+        monkeypatch,
+        df=_build_mrt_dataframe(
+            current_missing={"wind"},
+            future_missing_by_row={1: {"wind"}, 2: {"wind"}},
+        ),
+    )
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+
+    response = await service.calculate_home_risk_batch(
+        BatchRiskRequest(
+            profile="ADULT",
+            locations=[
+                BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067)
+            ],
+        )
+    )
+
+    assert response.locations[0].status == BatchRiskLocationStatus.ERROR
+    assert response.locations[0].error_code == "unknown_inputs"
+    assert response.locations[0].detail == "Required model inputs are missing or uncertain"
+
+
+async def test_risk_service_batch_logs_unexpected_exceptions(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Unexpected failures should stay per-location and be logged."""
+
+    class ExplodingWeatherClient(BatchWeatherClient):
+        async def fetch_weather_forecast_batch(self, *, locations):
+            self.calls += 1
+            await asyncio.sleep(0)
+            raise RuntimeError("boom")
+
+    weather_client = ExplodingWeatherClient()
+    calculator = FakeCalculator()
+    _install_mrt_pipeline(monkeypatch, df=_build_mrt_dataframe())
+    service = RiskService(
+        weather_client=weather_client,
+        calculator=calculator,
+        ttl_seconds=600,
+    )
+
+    with caplog.at_level("ERROR"):
+        response = await service.calculate_home_risk_batch(
+            BatchRiskRequest(
+                profile="ADULT",
+                locations=[
+                    BatchRiskLocationRequest(sport="SOCCER", latitude=-33.847, longitude=151.067)
+                ],
+            )
+        )
+
+    assert response.locations[0].status == BatchRiskLocationStatus.ERROR
+    assert response.locations[0].error_code == "risk_calculation_failed"
+    assert "Unexpected batch location failure" in caplog.text
