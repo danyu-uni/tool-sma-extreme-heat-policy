@@ -5,6 +5,7 @@
   "nav": {
     "home": "首页",
     "about": "关于",
+    "dashboard": "我的仪表盘",
     "detailedRecommendations": "建议",
     "drawerTitle": "导航",
     "toggleAriaLabel": "切换导航菜单",
@@ -284,6 +285,45 @@
         "missingCoordinatesBody": "无法获取 {{location}} 的坐标，因此不能显示地图。",
         "locationFallback": "请选择地点"
       }
+    }
+  },
+  "dashboard": {
+    "notifications": {
+      "riskUpdated": "风险已更新"
+    },
+    "header": {
+      "title": "我的仪表盘",
+      "description": "选择地点和运动项目以添加到仪表盘。风险等级反映当前时间。最高风险为今日最高等级。最多可添加 6 张卡片。"
+    },
+    "addLocation": {
+      "addButton": "添加到仪表盘"
+    },
+    "emptyState": {
+      "title": "尚未保存任何地点",
+      "body": "搜索城市并添加，即可开始监控多个地点的热应激风险。"
+    },
+    "cards": {
+      "title": "{{sport}} · {{location}}",
+      "openHomeAriaLabel": "在首页打开 {{title}}",
+      "delete": "删除",
+      "moveLeft": "左移",
+      "moveRight": "右移"
+    },
+    "cardErrors": {
+      "generic": "无法加载此地点的风险数据。",
+      "missingResult": "此地点的风险数据不可用。",
+      "unknownInputs": "此地点的天气输入数据不可用。",
+      "riskCalculationFailed": "无法计算此地点的风险。"
+    },
+    "errors": {
+      "missing_token": "Mapbox 未配置，地点搜索不可用。",
+      "retrieve_failed": "无法解析所选地点，请重试。",
+      "unavailable": "地点搜索暂时不可用，请重试。",
+      "no_results": "没有匹配的地点。",
+      "duplicate": "此地点和运动项目组合已保存。",
+      "max_reached": "最多可保存 6 个地点。",
+      "missing_coordinates": "无法解析所选地点。",
+      "missing_draft_location": "请先选择地点，再添加到仪表盘。"
     }
   },
   "errors": {

@@ -37,6 +37,7 @@ export function SiteHeader() {
   ];
   const mobileNavItems = [
     ...navItems,
+    { label: t("nav.dashboard"), to: "/dashboard" },
     {
       label: t("nav.detailedRecommendations"),
       to: "/detailed-recommendations",

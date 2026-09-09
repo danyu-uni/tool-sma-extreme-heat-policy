@@ -5,6 +5,7 @@
   "nav": {
     "home": "Home",
     "about": "About",
+    "dashboard": "My dashboard",
     "detailedRecommendations": "Recommendations",
     "drawerTitle": "Navigation",
     "toggleAriaLabel": "Toggle navigation",
@@ -284,6 +285,45 @@
         "missingCoordinatesBody": "Coordinates for {{location}} are unavailable, so the map cannot be displayed.",
         "locationFallback": "Select a location"
       }
+    }
+  },
+  "dashboard": {
+    "notifications": {
+      "riskUpdated": "Risk updated"
+    },
+    "header": {
+      "title": "My dashboard",
+      "description": "Select a location and sport to add to your dashboard. Risk ratings reflect the current time. The max rating is the highest rating for today. You can add up to 6 cards."
+    },
+    "addLocation": {
+      "addButton": "Add to dashboard"
+    },
+    "emptyState": {
+      "title": "No saved locations yet",
+      "body": "Search for a city and add it to start monitoring heat risk across multiple locations."
+    },
+    "cards": {
+      "title": "{{sport}} in {{location}}",
+      "openHomeAriaLabel": "Open {{title}} on the home page",
+      "delete": "Delete",
+      "moveLeft": "Move left",
+      "moveRight": "Move right"
+    },
+    "cardErrors": {
+      "generic": "Risk data could not be loaded for this location.",
+      "missingResult": "Risk data is unavailable for this location.",
+      "unknownInputs": "Weather inputs are unavailable for this location.",
+      "riskCalculationFailed": "Risk could not be calculated for this location."
+    },
+    "errors": {
+      "missing_token": "Location search is unavailable because Mapbox is not configured.",
+      "retrieve_failed": "Could not resolve the selected location. Please try again.",
+      "unavailable": "Location search is temporarily unavailable. Please try again.",
+      "no_results": "No locations matched your search.",
+      "duplicate": "This location is already saved for this sport.",
+      "max_reached": "You can save up to 6 locations.",
+      "missing_coordinates": "The selected location could not be resolved.",
+      "missing_draft_location": "Select a location before adding to your dashboard."
     }
   },
   "errors": {

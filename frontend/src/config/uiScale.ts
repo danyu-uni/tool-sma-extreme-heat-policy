@@ -7,3 +7,6 @@ export const UI_TITLE_THEME_ICON_SIZE = "xl";
 
 export const COMPACT_RECOMMENDATION_LAYOUT_QUERY = "(max-width: 36em)";
 export const ACTION_IMAGE_ICON_SIZE = "calc(var(--mantine-font-size-md) * 2.5)";
+
+export const DASHBOARD_CARD_HIT_LAYER_Z_INDEX = 1;
+export const DASHBOARD_CARD_CONTROL_LAYER_Z_INDEX = 2;
