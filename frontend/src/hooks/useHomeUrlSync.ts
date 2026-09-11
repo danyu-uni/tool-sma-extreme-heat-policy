@@ -16,7 +16,6 @@ export function useHomeUrlSync({
   setQueryStates,
   canSyncSelection,
 }: UseHomeUrlSyncParams): void {
-  const channel = useHomeStore((state) => state.channel);
   const profile = useHomeStore((state) => state.profile);
   const sport = useHomeStore((state) => state.sport);
   const selectedLocation = useHomeStore((state) => state.selectedLocation);
@@ -28,14 +27,25 @@ export function useHomeUrlSync({
   const syncRunRef = useRef(0);
 
   useEffect(() => {
-    if (!canSyncSelection || !selectedLocation) {
+    if (!canSyncSelection) {
+      return;
+    }
+
+    const {
+      channel,
+      profile: currentProfile,
+      sport: currentSport,
+      selectedLocation: currentSelectedLocation,
+    } = useHomeStore.getState();
+
+    if (!currentSelectedLocation) {
       return;
     }
 
     const nextSelection = {
-      profile,
-      sport,
-      loc: selectedLocation.displayLabel,
+      profile: currentProfile,
+      sport: currentSport,
+      loc: currentSelectedLocation.displayLabel,
     };
     const hasSelectionChanged =
       !lastAppliedRef.current ||
@@ -69,12 +79,10 @@ export function useHomeUrlSync({
 
       lastAppliedRef.current = nextSelection;
     })();
-  }, [
-    canSyncSelection,
-    channel,
-    profile,
-    selectedLocation,
-    setQueryStates,
-    sport,
-  ]);
+
+    return () => {
+      syncRunRef.current += 1;
+      lastAppliedRef.current = null;
+    };
+  }, [canSyncSelection, profile, selectedLocation, setQueryStates, sport]);
 }
