@@ -31,6 +31,7 @@ import {
   type WeeklyPreviewSource,
 } from "@/domain/weeklyWindowPreview";
 import { toIntlLocale } from "@/i18n/language";
+import { formatWeeklyForecastTime } from "@/lib/weeklyWindowLabels";
 
 interface WeeklyWindowPreviewProps {
   cards: SavedDashboardCard[];
@@ -49,10 +50,6 @@ export function WeeklyWindowPreview({
   const [start, setStart] = useState("1080");
   const [end, setEnd] = useState("1200");
   const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
   const card = cards.find((item) => item.id === cardId) ?? cards[0];
   const preview = card
     ? resolveWeeklyWindowPreview(
@@ -67,6 +64,33 @@ export function WeeklyWindowPreview({
     : null;
   const scheduledWindow =
     preview && "window" in preview ? preview.window : null;
+  const nextStart = scheduledWindow?.startUtc;
+  useEffect(() => {
+    const refreshClock = () => setNow(new Date());
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") refreshClock();
+    };
+    // At the exact start the occurrence is still valid; roll forward just after it.
+    const delay = nextStart
+      ? Math.min(60_000, Math.max(1, Date.parse(nextStart) - now.getTime() + 1))
+      : 60_000;
+    const timer = window.setTimeout(refreshClock, delay);
+    window.addEventListener("focus", refreshClock);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("focus", refreshClock);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [nextStart, now]);
+  const updateSelection = (
+    setter: (value: string) => void,
+    value: string | null,
+  ) => {
+    if (value === null) return;
+    setter(value);
+    setNow(new Date());
+  };
   const titleFor = (item: SavedDashboardCard) =>
     t("dashboard.cards.title", {
       sport: t(
@@ -114,7 +138,7 @@ export function WeeklyWindowPreview({
             <Select
               label={t("weeklyPreview.card")}
               value={card?.id ?? null}
-              onChange={setCardId}
+              onChange={(value) => updateSelection(setCardId, value)}
               data={cards.map((item) => ({
                 value: item.id,
                 label: titleFor(item),
@@ -127,18 +151,14 @@ export function WeeklyWindowPreview({
                 value={weekday}
                 data={weekdayOptions}
                 allowDeselect={false}
-                onChange={(value) => {
-                  if (value !== null) setWeekday(value);
-                }}
+                onChange={(value) => updateSelection(setWeekday, value)}
               />
               <Select
                 label={t("weeklyPreview.start")}
                 value={start}
                 data={hourOptions}
                 allowDeselect={false}
-                onChange={(value) => {
-                  if (value !== null) setStart(value);
-                }}
+                onChange={(value) => updateSelection(setStart, value)}
               />
               <Select
                 label={t("weeklyPreview.end")}
@@ -148,9 +168,7 @@ export function WeeklyWindowPreview({
                   { value: "1440", label: t("weeklyPreview.midnight") },
                 ]}
                 allowDeselect={false}
-                onChange={(value) => {
-                  if (value !== null) setEnd(value);
-                }}
+                onChange={(value) => updateSelection(setEnd, value)}
               />
             </SimpleGrid>
             <Text size="sm" c="dimmed">
@@ -171,8 +189,12 @@ export function WeeklyWindowPreview({
                   </Text>
                   <Text>
                     {timeLabel(scheduledWindow.startUtc)} –{" "}
-                    {timeLabel(scheduledWindow.endUtc)} ·{" "}
-                    {scheduledWindow.timeZone}
+                    {end === "1440"
+                      ? t("weeklyPreview.nextDayTime", {
+                          time: timeLabel(scheduledWindow.endUtc),
+                        })
+                      : timeLabel(scheduledWindow.endUtc)}{" "}
+                    · {scheduledWindow.timeZone}
                   </Text>
                 </>
               )}
@@ -197,12 +219,22 @@ export function WeeklyWindowPreview({
                   </Table.Thead>
                   <Table.Tbody>
                     {preview.points.map((point) => {
+                      const localTime = formatWeeklyForecastTime(
+                        point.time_local,
+                        locale,
+                      )!;
                       const risk = toRiskLevel(
                         point.heat_risk.risk_level_interpolated,
                       );
                       return (
                         <Table.Tr key={point.time_utc}>
-                          <Table.Td>{timeLabel(point.time_utc)}</Table.Td>
+                          <Table.Td>
+                            {localTime.dateKey !== preview.window.localDate
+                              ? t("weeklyPreview.nextDayTime", {
+                                  time: localTime.label,
+                                })
+                              : localTime.label}
+                          </Table.Td>
                           <Table.Td>
                             <Badge
                               color={getRiskColor(risk)}

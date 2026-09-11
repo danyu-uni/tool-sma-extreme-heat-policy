@@ -74,18 +74,24 @@ Provisional rules to agree before integrating scheduled cards:
 - Same-day windows, with the next midnight allowed as an end; no fixed
   three-hour limit. The preview selects whole hours.
 - A start at the current instant is included; already-started windows move to
-  the next occurrence. The preview clock updates once per minute.
+  the next occurrence. The preview refreshes just after the start boundary,
+  on selection changes and tab resume/focus, with a one-minute fallback.
 - Missing or ambiguous DST endpoints are reported rather than shifted.
 - Actual hourly samples include both endpoints. Full, uninterrupted forecast
   coverage is required; missing coverage never becomes a low-risk estimate.
 - No min/max/average aggregation, notifications, or shared schedule-storage
   contract is introduced here.
 
+Forecast sample labels use backend `time_local`; a next-day midnight end is
+explicitly labelled in the summary and sample table in both languages.
+
 The domain helpers are `weeklyWindow.ts`, `weeklyWindowForecast.ts` and
-`weeklyWindowPreview.ts`, with matching `.test.ts` tests. Run `pnpm test:ci`
-and `pnpm run ci` for the configured checks. The inherited Vitest configuration
-collects `.test.ts`, not `.test.tsx`; this contribution does not claim automated
-component or end-to-end coverage.
+`weeklyWindowPreview.ts`, with matching `.test.ts` tests. The component test
+uses jsdom and real Mantine controls; the query-adapter test supplies mocked
+query states. These are not live-network end-to-end or visual-layout tests.
+Run `pnpm test:ci` and `pnpm run ci` for the configured checks. Test files use
+`.test.ts` to match the existing collector. The jsdom-only `nwsapi` override
+avoids a recursive `:fullscreen` matcher in version 2.2.27.
 
 ## Project structure (Layer-first)
 

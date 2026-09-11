@@ -1,5 +1,6 @@
 import type { ForecastApiPoint } from "@/api/heatRisk";
 import type { ScheduledWindow } from "@/domain/weeklyWindow";
+import { parseOffsetIsoDateTime } from "@/lib/offsetIsoDateTime";
 
 export type WindowForecastResult =
   | { status: "ok"; points: ForecastApiPoint[] }
@@ -50,7 +51,11 @@ export function selectWeeklyWindowForecast(
   const covered = ordered.slice(left, right + 1);
   for (let index = 0; index < covered.length; index++) {
     const { point, instant } = covered[index];
-    if (!Number.isFinite(point.heat_risk.risk_level_interpolated)) {
+    if (
+      !Number.isFinite(point.heat_risk.risk_level_interpolated) ||
+      !parseOffsetIsoDateTime(point.time_local) ||
+      Date.parse(point.time_local) !== instant
+    ) {
       return { status: "invalid_forecast" };
     }
     if (index > 0) {

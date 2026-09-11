@@ -36,6 +36,17 @@ function point(hour: number, score = 1.2): ForecastApiPoint {
 }
 
 describe("weekly window forecast selection", () => {
+  it.each(["invalid", "2026-09-15T20:00:00+10:00"])(
+    "rejects invalid or inconsistent local time: %s",
+    (time_local) => {
+      expect(
+        selectWeeklyWindowForecast(
+          [point(8), { ...point(9), time_local }, point(10)],
+          WINDOW,
+        ),
+      ).toEqual({ status: "invalid_forecast" });
+    },
+  );
   it("selects only the target window, including endpoints, without changing input order", () => {
     const forecast = [point(10), point(7), point(9), point(8), point(11, 4)];
     const original = [...forecast];

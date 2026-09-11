@@ -9,6 +9,7 @@
     "start": "Start time",
     "end": "End time",
     "midnight": "Midnight (next day)",
+    "nextDayTime": "{{time}} (next day)",
     "rules": "Draft rules: same-day, hourly selections; passed start times move to the next occurrence. There is no fixed three-hour limit.",
     "next": "Next occurrence",
     "samples": "Actual hourly risk samples, including both endpoints. No average-risk calculation is applied.",
