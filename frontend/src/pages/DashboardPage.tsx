@@ -7,6 +7,8 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+import { WeeklyWindowPreview } from "@/components/dashboard/WeeklyWindowPreview";
 import { DashboardCardList } from "@/components/dashboard/DashboardCardList";
 import { DashboardMainPanel } from "@/components/dashboard/DashboardMainPanel";
 import { BottomToast } from "@/components/ui/BottomToast";
@@ -33,6 +35,7 @@ function toDashboardAddErrorMessageKey(
  */
 export function DashboardPage() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   useDashboardBootstrap();
   const cards = useDashboardStore((state) => state.cards);
   const heatRisk = useDashboardHeatRisk();
@@ -101,6 +104,12 @@ export function DashboardPage() {
     <>
       <Stack gap={SECTION_STACK_GAP}>
         <DashboardMainPanel onAddError={handleAddError} />
+        {import.meta.env.DEV && searchParams.get("weeklyPreview") === "1" ? (
+          <WeeklyWindowPreview
+            cards={cards}
+            getSource={heatRisk.getWeeklyPreviewSource}
+          />
+        ) : null}
         {cards.length > 0 ? (
           <DashboardCardList
             cards={cards}

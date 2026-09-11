@@ -12,9 +12,12 @@ import {
   type DashboardCardState,
 } from "@/domain/dashboardBatch";
 import type { SavedDashboardCard } from "@/domain/dashboard";
+import { toBatchResultKey } from "@/domain/dashboard";
+import type { WeeklyPreviewSource } from "@/domain/weeklyWindowPreview";
 import { useDashboardStore } from "@/store/dashboardStore";
 
 interface UseDashboardHeatRiskResult {
+  getWeeklyPreviewSource: (card: SavedDashboardCard) => WeeklyPreviewSource;
   getCardState: (card: SavedDashboardCard) => DashboardCardState;
   hasLoadedBatch: boolean;
   refresh: () => Promise<boolean>;
@@ -133,6 +136,15 @@ export function useDashboardHeatRisk(): UseDashboardHeatRiskResult {
   }
 
   return {
+    getWeeklyPreviewSource: (card) => {
+      if (batchQuery.isFetching || batchQuery.isPlaceholderData)
+        return { status: "loading" };
+      if (batchQuery.isError) return { status: "unavailable" };
+      const result = indexedResults?.get(
+        toBatchResultKey(card.sport, card.latitude, card.longitude),
+      );
+      return result ? { status: "ok", result } : { status: "unavailable" };
+    },
     getCardState,
     hasLoadedBatch,
     refresh,

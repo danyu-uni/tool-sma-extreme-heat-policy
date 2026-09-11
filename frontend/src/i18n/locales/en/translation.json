@@ -1,4 +1,31 @@
 {
+  "weeklyPreview": {
+    "title": "Weekly window preview",
+    "badge": "Local prototype",
+    "description": "Uses an existing dashboard card and its forecast. Schedule selections are not saved; this preview is for team discussion only.",
+    "empty": "Add a location and sport above to try a weekly window.",
+    "card": "Location and sport",
+    "weekday": "Every",
+    "start": "Start time",
+    "end": "End time",
+    "midnight": "Midnight (next day)",
+    "rules": "Draft rules: same-day, hourly selections; passed start times move to the next occurrence. There is no fixed three-hour limit.",
+    "next": "Next occurrence",
+    "samples": "Actual hourly risk samples, including both endpoints. No average-risk calculation is applied.",
+    "tableCaption": "Hourly forecast for the selected window",
+    "time": "Time at location",
+    "risk": "Risk level",
+    "openHome": "Open full forecast on Home",
+    "status": {
+      "loading": "Loading the location forecast…",
+      "unavailable": "The forecast is unavailable. No risk estimate is shown.",
+      "invalid_time_zone": "A valid location timezone is required. The browser timezone is not used as a substitute.",
+      "invalid_window": "Choose an end time later than the start. Overnight windows are not supported in this preview.",
+      "unresolved_local_time": "This window includes a missing or repeated daylight-saving time. Choose a different window.",
+      "incomplete_forecast": "The next occurrence is not fully covered by the available hourly forecast. No risk estimate is shown.",
+      "invalid_forecast": "The forecast contains invalid or duplicate data. No risk estimate is shown."
+    }
+  },
   "app": {
     "title": "Sports Heat Tool"
   },

@@ -56,6 +56,37 @@ Notes:
 - `VITE_API_BASE_URL` is required for backend forecast and current-risk data.
 - `.env.local` is ignored by git via `*.local`.
 
+## Weekly-window development preview (#67)
+
+With the backend and Vite development server running, open
+`/dashboard?weeklyPreview=1`. Add a dashboard location/sport card first, then
+select its weekday and start/end hours in **Weekly window preview**. The panel
+reuses that card's batch forecast and the API-provided location timezone. It
+does not create additional API requests or save schedule selections.
+
+This opt-in panel is for team review: ordinary `/dashboard` and production
+builds do not show it. Existing cards, storage, navigation and risk calculations
+are unchanged. The Home link carries the existing location/sport selection,
+not a time-window filter.
+
+Provisional rules to agree before integrating scheduled cards:
+
+- Same-day windows, with the next midnight allowed as an end; no fixed
+  three-hour limit. The preview selects whole hours.
+- A start at the current instant is included; already-started windows move to
+  the next occurrence. The preview clock updates once per minute.
+- Missing or ambiguous DST endpoints are reported rather than shifted.
+- Actual hourly samples include both endpoints. Full, uninterrupted forecast
+  coverage is required; missing coverage never becomes a low-risk estimate.
+- No min/max/average aggregation, notifications, or shared schedule-storage
+  contract is introduced here.
+
+The domain helpers are `weeklyWindow.ts`, `weeklyWindowForecast.ts` and
+`weeklyWindowPreview.ts`, with matching `.test.ts` tests. Run `pnpm test:ci`
+and `pnpm run ci` for the configured checks. The inherited Vitest configuration
+collects `.test.ts`, not `.test.tsx`; this contribution does not claim automated
+component or end-to-end coverage.
+
 ## Project structure (Layer-first)
 
 | Path             | Responsibility                              |
