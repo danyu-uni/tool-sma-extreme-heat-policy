@@ -306,8 +306,11 @@
       "title": "{{sport}} in {{location}}",
       "openHomeAriaLabel": "Open {{title}} on the home page",
       "delete": "Delete",
+      "moreActions": "Card actions",
       "moveLeft": "Move left",
-      "moveRight": "Move right"
+      "moveRight": "Move right",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
     },
     "cardErrors": {
       "generic": "Risk data could not be loaded for this location.",

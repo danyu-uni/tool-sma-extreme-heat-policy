@@ -1,7 +1,10 @@
-import { ActionIcon, Group, Tooltip } from "@mantine/core";
+import { ActionIcon, Box, Group, Menu, Tooltip } from "@mantine/core";
 import {
+  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
+  IconChevronUp,
+  IconDotsVertical,
   IconTrash,
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
@@ -9,7 +12,9 @@ import {
   DASHBOARD_CARD_CONTROL_LAYER_Z_INDEX,
   UI_INLINE_ICON_SIZE,
   UI_INLINE_ICON_STROKE,
+  UI_TITLE_ICON_SIZE,
 } from "@/config/uiScale";
+import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 
 interface DashboardCardActionsProps {
   index: number;
@@ -30,8 +35,13 @@ export function DashboardCardActions({
   onMoveDown,
 }: DashboardCardActionsProps) {
   const { t } = useTranslation();
+  const isMobile = useIsMobileViewport();
   const canMoveUp = index > 0;
   const canMoveDown = index < totalCount - 1;
+  const controlLayerStyle = {
+    flexShrink: 0,
+    zIndex: DASHBOARD_CARD_CONTROL_LAYER_Z_INDEX,
+  };
 
   const stopPropagation = (event: { stopPropagation: () => void }) => {
     event.stopPropagation();
@@ -52,15 +62,61 @@ export function DashboardCardActions({
     onMoveDown();
   };
 
+  if (isMobile) {
+    const moreActionsLabel = t("dashboard.cards.moreActions");
+
+    return (
+      <Box pos="relative" style={controlLayerStyle} onClick={stopPropagation}>
+        <Menu position="bottom-end" width={180} withinPortal>
+          <Menu.Target>
+            <ActionIcon
+              variant="default"
+              size="lg"
+              aria-label={moreActionsLabel}
+            >
+              <IconDotsVertical size={UI_TITLE_ICON_SIZE} aria-hidden="true" />
+            </ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              leftSection={
+                <IconChevronUp size={UI_INLINE_ICON_SIZE} aria-hidden="true" />
+              }
+              disabled={!canMoveUp}
+              onClick={handleMoveUp}
+            >
+              {t("dashboard.cards.moveUp")}
+            </Menu.Item>
+            <Menu.Item
+              leftSection={
+                <IconChevronDown
+                  size={UI_INLINE_ICON_SIZE}
+                  aria-hidden="true"
+                />
+              }
+              disabled={!canMoveDown}
+              onClick={handleMoveDown}
+            >
+              {t("dashboard.cards.moveDown")}
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item
+              leftSection={
+                <IconTrash size={UI_INLINE_ICON_SIZE} aria-hidden="true" />
+              }
+              color="red"
+              onClick={handleRemove}
+            >
+              {t("dashboard.cards.delete")}
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </Box>
+    );
+  }
+
   return (
-    <Group
-      gap={4}
-      wrap="nowrap"
-      style={{
-        flexShrink: 0,
-        zIndex: DASHBOARD_CARD_CONTROL_LAYER_Z_INDEX,
-      }}
-    >
+    <Group gap={4} wrap="nowrap" style={controlLayerStyle}>
       <Tooltip label={t("dashboard.cards.moveLeft")}>
         <ActionIcon
           variant="light"

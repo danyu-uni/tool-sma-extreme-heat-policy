@@ -306,8 +306,11 @@
       "title": "{{sport}} · {{location}}",
       "openHomeAriaLabel": "在首页打开 {{title}}",
       "delete": "删除",
+      "moreActions": "卡片操作",
       "moveLeft": "左移",
-      "moveRight": "右移"
+      "moveRight": "右移",
+      "moveUp": "上移",
+      "moveDown": "下移"
     },
     "cardErrors": {
       "generic": "无法加载此地点的风险数据。",
