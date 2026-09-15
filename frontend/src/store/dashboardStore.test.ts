@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  type DashboardCardSchedule,
   isDuplicateSavedDashboardCard,
   validateAddSavedDashboardCard,
 } from "@/domain/dashboard";
@@ -27,6 +28,12 @@ const MELBOURNE_LOCATION: LocationSuggestion = {
   mapboxId: "mapbox-melbourne",
   latitude: -37.813,
   longitude: 144.963,
+};
+
+const TUESDAY_THURSDAY_EVENING: DashboardCardSchedule = {
+  weekdays: [2, 4],
+  startMinutes: 1080,
+  endMinutes: 1200,
 };
 
 function resetDashboardStore() {
@@ -101,6 +108,24 @@ describe("dashboardStore", () => {
 
     expect(useDashboardStore.getState().cards).toHaveLength(1);
     expect(useDashboardStore.getState().cards[0]?.name).toBe("Melbourne");
+  });
+
+  it("saves the schedule on a new card", () => {
+    expect(
+      useDashboardStore
+        .getState()
+        .addCard(SportType.Soccer, SYDNEY_LOCATION, TUESDAY_THURSDAY_EVENING),
+    ).toEqual({ ok: true });
+
+    expect(useDashboardStore.getState().cards[0]?.schedule).toEqual(
+      TUESDAY_THURSDAY_EVENING,
+    );
+  });
+
+  it("adds a card without a schedule", () => {
+    useDashboardStore.getState().addCard(SportType.Soccer, SYDNEY_LOCATION);
+
+    expect(useDashboardStore.getState().cards[0]?.schedule).toBeUndefined();
   });
 
   it("allows the same location for different sports", () => {

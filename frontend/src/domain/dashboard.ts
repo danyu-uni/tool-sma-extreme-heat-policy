@@ -1,8 +1,11 @@
 import type { LocationSuggestion } from "@/domain/location";
 import type { SportType } from "@/domain/sport";
+import type { WeeklyWindow } from "@/domain/weeklyWindow";
 
 export const MAX_DASHBOARD_CARDS = 6;
 export const COORDINATE_KEY_DECIMALS = 6;
+
+export type DashboardCardSchedule = Omit<WeeklyWindow, "timeZone">;
 
 export interface SavedDashboardCard {
   id: string;
@@ -14,6 +17,7 @@ export interface SavedDashboardCard {
   latitude: number;
   longitude: number;
   mapboxId?: string;
+  schedule?: DashboardCardSchedule;
 }
 
 export type AddDashboardCardFailureReason =
@@ -124,6 +128,7 @@ function createDashboardCardId(): string {
 export function createSavedDashboardCardFromSuggestion(
   sport: SportType,
   suggestion: LocationSuggestion & { latitude: number; longitude: number },
+  schedule?: DashboardCardSchedule,
 ): SavedDashboardCard {
   return {
     id: createDashboardCardId(),
@@ -135,6 +140,7 @@ export function createSavedDashboardCardFromSuggestion(
     latitude: suggestion.latitude,
     longitude: suggestion.longitude,
     mapboxId: suggestion.mapboxId,
+    schedule,
   };
 }
 

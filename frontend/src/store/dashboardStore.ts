@@ -3,6 +3,7 @@ import type { LocationSuggestion } from "@/domain/location";
 import {
   createSavedDashboardCardFromSuggestion,
   type AddDashboardCardResult,
+  type DashboardCardSchedule,
   type SavedDashboardCard,
   validateAddSavedDashboardCard,
 } from "@/domain/dashboard";
@@ -28,6 +29,7 @@ interface DashboardStoreState {
   addCard: (
     sport: SportType,
     suggestion: LocationSuggestion,
+    schedule?: DashboardCardSchedule,
   ) => AddDashboardCardResult;
   removeCard: (cardId: string) => void;
   moveCardUp: (cardId: string) => void;
@@ -119,7 +121,7 @@ export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
     }));
   },
 
-  addCard: (sport, suggestion) => {
+  addCard: (sport, suggestion, schedule) => {
     const validation = validateAddSavedDashboardCard(
       get().cards,
       sport,
@@ -129,11 +131,15 @@ export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
       return validation;
     }
 
-    const savedCard = createSavedDashboardCardFromSuggestion(sport, {
-      ...suggestion,
-      latitude: suggestion.latitude as number,
-      longitude: suggestion.longitude as number,
-    });
+    const savedCard = createSavedDashboardCardFromSuggestion(
+      sport,
+      {
+        ...suggestion,
+        latitude: suggestion.latitude as number,
+        longitude: suggestion.longitude as number,
+      },
+      schedule,
+    );
 
     set((state) => ({
       cards: [...state.cards, savedCard],
