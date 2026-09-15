@@ -65,15 +65,24 @@ export function loadPersistedDashboardState(
 
     const cards = parsed.cards;
 
-    if (
-      !Array.isArray(cards) ||
-      !cards.every((card) => isValidSavedDashboardCard(card, allowedSports))
-    ) {
+    if (!Array.isArray(cards)) {
       return null;
     }
 
+    const validCards = cards.filter((card): card is SavedDashboardCard =>
+      isValidSavedDashboardCard(card, allowedSports),
+    );
+    const discardedCount = cards.length - validCards.length;
+    if (discardedCount > 0) {
+      console.warn(
+        `Dropped ${discardedCount} invalid dashboard ${
+          discardedCount === 1 ? "card" : "cards"
+        } from localStorage.`,
+      );
+    }
+
     return {
-      cards: cards.slice(0, MAX_DASHBOARD_CARDS),
+      cards: validCards.slice(0, MAX_DASHBOARD_CARDS),
     };
   } catch {
     return null;
