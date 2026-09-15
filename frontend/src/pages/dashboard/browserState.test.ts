@@ -35,6 +35,11 @@ const MELBOURNE_CARD: SavedDashboardCard = {
   mapboxId: "mapbox-melbourne",
 };
 
+const SCHEDULED_SYDNEY_CARD: SavedDashboardCard = {
+  ...SYDNEY_CARD,
+  schedule: { weekdays: [2, 4], startMinutes: 1080, endMinutes: 1200 },
+};
+
 function installWindowMock(): Map<string, string> {
   const storage = new Map<string, string>();
 
@@ -115,6 +120,31 @@ describe("dashboard browserState", () => {
     loadPersistedDashboardState(SPORT_TYPE_VALUES);
 
     expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("loads a card with its saved schedule", () => {
+    savePersistedDashboardState({
+      cards: [SCHEDULED_SYDNEY_CARD, MELBOURNE_CARD],
+    });
+
+    expect(loadPersistedDashboardState(SPORT_TYPE_VALUES)).toEqual({
+      cards: [SCHEDULED_SYDNEY_CARD, MELBOURNE_CARD],
+    });
+  });
+
+  it("drops a card whose schedule has the wrong shape", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    persistRawCards(storage, [
+      {
+        ...SYDNEY_CARD,
+        schedule: { weekdays: "Tuesday", startMinutes: 1080, endMinutes: 1200 },
+      },
+      MELBOURNE_CARD,
+    ]);
+
+    expect(loadPersistedDashboardState(SPORT_TYPE_VALUES)).toEqual({
+      cards: [MELBOURNE_CARD],
+    });
   });
 
   it("returns null when the saved cards are not a list", () => {

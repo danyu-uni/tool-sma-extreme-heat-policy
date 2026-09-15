@@ -1,5 +1,6 @@
 import {
   MAX_DASHBOARD_CARDS,
+  type DashboardCardSchedule,
   type SavedDashboardCard,
 } from "@/domain/dashboard";
 import { DEFAULT_SPORT_TYPE, type SportType } from "@/domain/sport";
@@ -13,6 +14,20 @@ export interface PersistedDashboardState {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isDashboardCardSchedule(
+  value: unknown,
+): value is DashboardCardSchedule {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.weekdays) &&
+    value.weekdays.every((day) => Number.isInteger(day)) &&
+    typeof value.startMinutes === "number" &&
+    Number.isFinite(value.startMinutes) &&
+    typeof value.endMinutes === "number" &&
+    Number.isFinite(value.endMinutes)
+  );
 }
 
 function isValidSavedDashboardCard(
@@ -38,7 +53,8 @@ function isValidSavedDashboardCard(
     typeof value.longitude === "number" &&
     Number.isFinite(value.longitude) &&
     (value.regionName === undefined || typeof value.regionName === "string") &&
-    (value.mapboxId === undefined || typeof value.mapboxId === "string")
+    (value.mapboxId === undefined || typeof value.mapboxId === "string") &&
+    (value.schedule === undefined || isDashboardCardSchedule(value.schedule))
   );
 }
 
