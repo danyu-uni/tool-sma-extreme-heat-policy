@@ -1,11 +1,22 @@
 import type { LocationSuggestion } from "@/domain/location";
 import type { SportType } from "@/domain/sport";
-import type { WeeklyWindow } from "@/domain/weeklyWindow";
+import type { Weekday, WeeklyWindow } from "@/domain/weeklyWindow";
 
 export const MAX_DASHBOARD_CARDS = 6;
 export const COORDINATE_KEY_DECIMALS = 6;
 
 export type DashboardCardSchedule = Omit<WeeklyWindow, "timeZone">;
+
+export interface DashboardCardScheduleDraft {
+  weekdays: readonly Weekday[];
+  startMinutes: number | null;
+  endMinutes: number | null;
+}
+
+export type ResolvedDashboardCardScheduleDraft =
+  | { status: "empty" }
+  | { status: "incomplete" }
+  | { status: "complete"; schedule: DashboardCardSchedule };
 
 export interface SavedDashboardCard {
   id: string;
@@ -172,4 +183,33 @@ export function validateAddSavedDashboardCard(
   }
 
   return { ok: true };
+}
+
+export function resolveDashboardCardScheduleDraft(
+  draft: DashboardCardScheduleDraft,
+): ResolvedDashboardCardScheduleDraft {
+  const hasWeekdays = draft.weekdays.length > 0;
+  const hasStart = draft.startMinutes !== null;
+  const hasEnd = draft.endMinutes !== null;
+
+  if (!hasWeekdays && !hasStart && !hasEnd) {
+    return { status: "empty" };
+  }
+
+  if (
+    !hasWeekdays ||
+    draft.startMinutes === null ||
+    draft.endMinutes === null
+  ) {
+    return { status: "incomplete" };
+  }
+
+  return {
+    status: "complete",
+    schedule: {
+      weekdays: draft.weekdays,
+      startMinutes: draft.startMinutes,
+      endMinutes: draft.endMinutes,
+    },
+  };
 }

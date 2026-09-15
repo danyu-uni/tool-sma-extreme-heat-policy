@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { suggestLocations } from "@/api/mapboxSuggest";
 import {
   MAX_DASHBOARD_CARDS,
+  resolveDashboardCardScheduleDraft,
   type AddDashboardCardFailureReason,
 } from "@/domain/dashboard";
 import type { LocationSuggestion } from "@/domain/location";
+import type { Weekday } from "@/domain/weeklyWindow";
 import {
   LOCATION_SUGGEST_TYPES_PARAM,
   prepareLocationSuggestions,
@@ -36,6 +38,12 @@ interface UseDashboardLocationAddResult {
   canAddMoreCards: boolean;
   canSubmitAdd: boolean;
   addErrorReason: DashboardLocationAddErrorReason | null;
+  draftWeekdays: readonly Weekday[];
+  draftStartMinutes: number | null;
+  draftEndMinutes: number | null;
+  onDraftWeekdaysChange: (weekdays: readonly Weekday[]) => void;
+  onDraftStartMinutesChange: (minutes: number | null) => void;
+  onDraftEndMinutesChange: (minutes: number | null) => void;
   onLocationSearchInputChange: (value: string) => void;
   onLocationOptionSubmit: (suggestionId: string) => void;
   onAddCardClick: () => void;
@@ -96,6 +104,11 @@ export function useDashboardLocationAdd(): UseDashboardLocationAddResult {
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [addErrorReason, setAddErrorReason] =
     useState<DashboardLocationAddErrorReason | null>(null);
+  const [draftWeekdays, setDraftWeekdays] = useState<readonly Weekday[]>([]);
+  const [draftStartMinutes, setDraftStartMinutes] = useState<number | null>(
+    null,
+  );
+  const [draftEndMinutes, setDraftEndMinutes] = useState<number | null>(null);
   const retrieveController = useMemo(
     () => createLatestAbortableRequestController(),
     [],
@@ -110,10 +123,16 @@ export function useDashboardLocationAdd(): UseDashboardLocationAddResult {
   const canAddMoreCards = cards.length < MAX_DASHBOARD_CARDS;
   const isShowingCommittedDraftLocation =
     draftLocationValue.length > 0 && query === draftLocationValue;
+  const scheduleDraft = resolveDashboardCardScheduleDraft({
+    weekdays: draftWeekdays,
+    startMinutes: draftStartMinutes,
+    endMinutes: draftEndMinutes,
+  });
   const canSubmitAdd =
     canAddMoreCards &&
     hasResolvedCoordinates(draftLocation) &&
-    !isResolvingLocation;
+    !isResolvingLocation &&
+    scheduleDraft.status !== "incomplete";
 
   const shouldSuggest =
     hasMapboxToken &&
@@ -257,13 +276,24 @@ export function useDashboardLocationAdd(): UseDashboardLocationAddResult {
       return;
     }
 
-    const result = addCard(draftSport, draftLocation);
+    if (scheduleDraft.status === "incomplete") {
+      return;
+    }
+
+    const result = addCard(
+      draftSport,
+      draftLocation,
+      scheduleDraft.status === "complete" ? scheduleDraft.schedule : undefined,
+    );
     if (!result.ok) {
       setAddErrorReason(result.reason);
       return;
     }
 
     setAddErrorReason(null);
+    setDraftWeekdays([]);
+    setDraftStartMinutes(null);
+    setDraftEndMinutes(null);
   };
 
   return {
@@ -275,6 +305,12 @@ export function useDashboardLocationAdd(): UseDashboardLocationAddResult {
     canAddMoreCards,
     canSubmitAdd,
     addErrorReason: addErrorReason ?? resolveSuggestErrorReason(),
+    draftWeekdays,
+    draftStartMinutes,
+    draftEndMinutes,
+    onDraftWeekdaysChange: setDraftWeekdays,
+    onDraftStartMinutesChange: setDraftStartMinutes,
+    onDraftEndMinutesChange: setDraftEndMinutes,
     onLocationSearchInputChange,
     onLocationOptionSubmit,
     onAddCardClick,
