@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Chip,
   Combobox,
   Group,
   InputBase,
@@ -15,7 +16,10 @@ import { useTranslation } from "react-i18next";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { CONTENT_GAP } from "@/config/uiLayout";
 import { isSportType, sports, type SportType } from "@/domain/sport";
+import type { Weekday } from "@/domain/weeklyWindow";
 import { useDashboardLocationAdd } from "@/hooks/useDashboardLocationAdd";
+import { toIntlLocale } from "@/i18n/language";
+import { formatMinutesOfDay, formatWeekday } from "@/lib/scheduleFormat";
 import { useDashboardStore } from "@/store/dashboardStore";
 
 interface SelectOption<T extends string = string> {
@@ -24,6 +28,9 @@ interface SelectOption<T extends string = string> {
 }
 
 const FIELD_LABEL_WIDTH = 72;
+const MINUTES_PER_HOUR = 60;
+const MINUTES_PER_DAY = 1440;
+const WEEKDAYS: readonly Weekday[] = [0, 1, 2, 3, 4, 5, 6];
 
 interface DashboardMainPanelProps {
   onAddError?: (
@@ -37,7 +44,8 @@ interface DashboardMainPanelProps {
  * Renders the dashboard add panel with Home-style filters and an explicit add action.
  */
 export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = toIntlLocale(i18n.resolvedLanguage);
   const locationCombobox = useCombobox();
   const draftSport = useDashboardStore((state) => state.draftSport);
   const setDraftSport = useDashboardStore((state) => state.setDraftSport);
@@ -51,10 +59,17 @@ export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
     canAddMoreCards,
     canSubmitAdd,
     addErrorReason,
+    draftWeekdays,
+    draftStartMinutes,
+    draftEndMinutes,
+    onDraftWeekdaysChange,
+    onDraftStartMinutesChange,
+    onDraftEndMinutesChange,
     onLocationSearchInputChange,
     onLocationOptionSubmit,
     onAddCardClick,
   } = useDashboardLocationAdd();
+  const isAddFormDisabled = !canAddMoreCards || isResolvingLocation;
 
   const sportOptions = useMemo<SelectOption<SportType>[]>(
     () =>
@@ -63,6 +78,33 @@ export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
         label: t(sportMeta.labelKey),
       })),
     [t],
+  );
+
+  const weekdayOptions = useMemo(
+    () =>
+      WEEKDAYS.map((day) => ({
+        value: String(day),
+        label: formatWeekday(day, locale),
+      })),
+    [locale],
+  );
+  const startTimeOptions = useMemo(
+    () =>
+      Array.from({ length: 24 }, (_, hour) => ({
+        value: String(hour * MINUTES_PER_HOUR),
+        label: formatMinutesOfDay(hour * MINUTES_PER_HOUR, locale),
+      })),
+    [locale],
+  );
+  const endTimeOptions = useMemo(
+    () => [
+      ...startTimeOptions.slice(1),
+      {
+        value: String(MINUTES_PER_DAY),
+        label: t("dashboard.addLocation.midnight"),
+      },
+    ],
+    [startTimeOptions, t],
   );
 
   const shouldRenderLocationDropdown =
@@ -137,7 +179,7 @@ export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
                   rightSection={locationRightSection}
                   rightSectionPointerEvents="none"
                   autoComplete="off"
-                  disabled={!canAddMoreCards || isResolvingLocation}
+                  disabled={isAddFormDisabled}
                 />
               </Combobox.Target>
 
@@ -163,9 +205,80 @@ export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
               onChange={handleSportChange}
               searchable
               nothingFoundMessage={t("home.sections.filters.sportNotFound")}
-              disabled={!canAddMoreCards || isResolvingLocation}
+              disabled={isAddFormDisabled}
             />
           </Box>
+        </Group>
+
+        <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
+          <Text fw={600} w={FIELD_LABEL_WIDTH} ta="right">
+            {t("dashboard.addLocation.weekdaysLabel")}:
+          </Text>
+          <Chip.Group
+            multiple
+            value={draftWeekdays.map(String)}
+            onChange={(values) =>
+              onDraftWeekdaysChange(
+                values
+                  .map((value) => Number(value) as Weekday)
+                  .sort((left, right) => left - right),
+              )
+            }
+          >
+            <Group
+              flex={1}
+              gap="xs"
+              role="group"
+              aria-label={t("dashboard.addLocation.weekdaysLabel")}
+            >
+              {weekdayOptions.map((option) => (
+                <Chip
+                  key={option.value}
+                  value={option.value}
+                  size="sm"
+                  disabled={isAddFormDisabled}
+                >
+                  {option.label}
+                </Chip>
+              ))}
+            </Group>
+          </Chip.Group>
+        </Group>
+
+        <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
+          <Text fw={600} w={FIELD_LABEL_WIDTH} ta="right">
+            {t("dashboard.addLocation.timeLabel")}:
+          </Text>
+          <Group flex={1} wrap="nowrap" gap="xs">
+            <Select
+              flex={1}
+              aria-label={t("dashboard.addLocation.startTime")}
+              placeholder={t("dashboard.addLocation.startTime")}
+              size="md"
+              data={startTimeOptions}
+              value={
+                draftStartMinutes === null ? null : String(draftStartMinutes)
+              }
+              onChange={(value) =>
+                onDraftStartMinutesChange(value === null ? null : Number(value))
+              }
+              clearable
+              disabled={isAddFormDisabled}
+            />
+            <Select
+              flex={1}
+              aria-label={t("dashboard.addLocation.endTime")}
+              placeholder={t("dashboard.addLocation.endTime")}
+              size="md"
+              data={endTimeOptions}
+              value={draftEndMinutes === null ? null : String(draftEndMinutes)}
+              onChange={(value) =>
+                onDraftEndMinutesChange(value === null ? null : Number(value))
+              }
+              clearable
+              disabled={isAddFormDisabled}
+            />
+          </Group>
         </Group>
 
         <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>

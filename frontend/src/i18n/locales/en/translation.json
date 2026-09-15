@@ -324,7 +324,12 @@
       "description": "Select a location and sport to add to your dashboard. Risk ratings reflect the current time. The max rating is the highest rating for today. You can add up to 6 cards."
     },
     "addLocation": {
-      "addButton": "Add to dashboard"
+      "addButton": "Add to dashboard",
+      "weekdaysLabel": "Every",
+      "timeLabel": "Time",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "midnight": "Midnight (next day)"
     },
     "emptyState": {
       "title": "No saved locations yet",

@@ -324,7 +324,12 @@
       "description": "选择地点和运动项目以添加到仪表盘。风险等级反映当前时间。最高风险为今日最高等级。最多可添加 6 张卡片。"
     },
     "addLocation": {
-      "addButton": "添加到仪表盘"
+      "addButton": "添加到仪表盘",
+      "weekdaysLabel": "每逢",
+      "timeLabel": "时间",
+      "startTime": "开始时间",
+      "endTime": "结束时间",
+      "midnight": "次日零点"
     },
     "emptyState": {
       "title": "尚未保存任何地点",
