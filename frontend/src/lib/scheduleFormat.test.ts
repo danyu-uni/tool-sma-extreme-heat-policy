@@ -29,26 +29,50 @@ describe("formatMinutesOfDay", () => {
   });
 });
 
+const formatEnglishNextDay = (time: string) => `${time} (next day)`;
+const formatChineseNextDay = (time: string) => `${time}（次日）`;
+
 describe("formatDashboardCardSchedule", () => {
   it.each([
-    ["en-AU", "Tue, Thu · 6:00 pm – 8:00 pm"],
-    ["zh-CN", "周二、周四 · 18:00 – 20:00"],
-  ])("formats a two-day evening schedule in %s", (locale, label) => {
-    expect(
-      formatDashboardCardSchedule(
-        { weekdays: [4, 2], startMinutes: 1080, endMinutes: 1200 },
-        locale,
-      ),
-    ).toBe(label);
-  });
+    ["en-AU", formatEnglishNextDay, "Tue, Thu · 6:00 pm – 8:00 pm"],
+    ["zh-CN", formatChineseNextDay, "周二、周四 · 18:00 – 20:00"],
+  ])(
+    "formats a two-day evening schedule in %s",
+    (locale, formatNextDayTime, label) => {
+      expect(
+        formatDashboardCardSchedule(
+          { weekdays: [4, 2], startMinutes: 1080, endMinutes: 1200 },
+          locale,
+          formatNextDayTime,
+        ),
+      ).toBe(label);
+    },
+  );
 
-  it("formats a single day ending at midnight", () => {
+  it.each([
+    ["en-AU", formatEnglishNextDay, "Sat · 9:00 pm – 12:00 am (next day)"],
+    ["zh-CN", formatChineseNextDay, "周六 · 21:00 – 0:00（次日）"],
+  ])(
+    "marks a schedule ending at midnight as next day in %s",
+    (locale, formatNextDayTime, label) => {
+      expect(
+        formatDashboardCardSchedule(
+          { weekdays: [6], startMinutes: 1260, endMinutes: 1440 },
+          locale,
+          formatNextDayTime,
+        ),
+      ).toBe(label);
+    },
+  );
+
+  it("does not mark a schedule starting at midnight as next day", () => {
     expect(
       formatDashboardCardSchedule(
-        { weekdays: [6], startMinutes: 1260, endMinutes: 1440 },
-        "zh-CN",
+        { weekdays: [1], startMinutes: 0, endMinutes: 120 },
+        "en-AU",
+        formatEnglishNextDay,
       ),
-    ).toBe("周六 · 21:00 – 0:00");
+    ).toBe("Mon · 12:00 am – 2:00 am");
   });
 
   it("does not reorder the schedule it was given", () => {
@@ -58,7 +82,7 @@ describe("formatDashboardCardSchedule", () => {
       endMinutes: 1200,
     };
 
-    formatDashboardCardSchedule(schedule, "en-AU");
+    formatDashboardCardSchedule(schedule, "en-AU", formatEnglishNextDay);
 
     expect(schedule.weekdays).toEqual([4, 2]);
   });

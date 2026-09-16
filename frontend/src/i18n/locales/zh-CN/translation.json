@@ -343,7 +343,8 @@
       "moveLeft": "左移",
       "moveRight": "右移",
       "moveUp": "上移",
-      "moveDown": "下移"
+      "moveDown": "下移",
+      "nextDayTime": "{{time}}（次日）"
     },
     "cardErrors": {
       "generic": "无法加载此地点的风险数据。",

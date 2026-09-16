@@ -343,7 +343,8 @@
       "moveLeft": "Move left",
       "moveRight": "Move right",
       "moveUp": "Move up",
-      "moveDown": "Move down"
+      "moveDown": "Move down",
+      "nextDayTime": "{{time}} (next day)"
     },
     "cardErrors": {
       "generic": "Risk data could not be loaded for this location.",

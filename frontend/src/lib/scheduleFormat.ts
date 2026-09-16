@@ -1,6 +1,8 @@
 import type { DashboardCardSchedule } from "@/domain/dashboard";
 import type { Weekday } from "@/domain/weeklyWindow";
 
+const MINUTES_PER_DAY = 1440;
+
 export function formatWeekday(day: Weekday, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
     weekday: "short",
@@ -19,6 +21,7 @@ export function formatMinutesOfDay(minutes: number, locale: string): string {
 export function formatDashboardCardSchedule(
   schedule: DashboardCardSchedule,
   locale: string,
+  formatNextDayTime: (time: string) => string,
 ): string {
   const weekdays = new Intl.ListFormat(locale, {
     type: "conjunction",
@@ -29,7 +32,11 @@ export function formatDashboardCardSchedule(
       .map((day) => formatWeekday(day, locale)),
   );
   const start = formatMinutesOfDay(schedule.startMinutes, locale);
-  const end = formatMinutesOfDay(schedule.endMinutes, locale);
+  const endTime = formatMinutesOfDay(schedule.endMinutes, locale);
+  const end =
+    schedule.endMinutes === MINUTES_PER_DAY
+      ? formatNextDayTime(endTime)
+      : endTime;
 
   return `${weekdays} · ${start} – ${end}`;
 }
