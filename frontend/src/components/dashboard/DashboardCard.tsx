@@ -24,6 +24,8 @@ import {
 } from "@/domain/riskRegistry";
 import { sports } from "@/domain/sport";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
+import { toIntlLocale } from "@/i18n/language";
+import { formatDashboardCardSchedule } from "@/lib/scheduleFormat";
 import { CONTENT_GAP, CONTENT_PADDING } from "@/config/uiLayout";
 import {
   DASHBOARD_CARD_CONTROL_LAYER_Z_INDEX,
@@ -142,6 +144,7 @@ function DashboardCardHeader({
   title,
   locationSubtitle,
   shouldShowLocationSubtitle,
+  scheduleLabel,
   openHomeAriaLabel,
   lineClamp,
   actions,
@@ -150,6 +153,7 @@ function DashboardCardHeader({
   title: string;
   locationSubtitle: string;
   shouldShowLocationSubtitle: boolean;
+  scheduleLabel: string | null;
   openHomeAriaLabel: string;
   lineClamp: number;
   actions: ReactNode;
@@ -170,6 +174,11 @@ function DashboardCardHeader({
       {shouldShowLocationSubtitle ? (
         <Text c="dimmed" fz="sm" lineClamp={lineClamp}>
           {locationSubtitle}
+        </Text>
+      ) : null}
+      {scheduleLabel ? (
+        <Text c="dimmed" fz="sm" lineClamp={lineClamp}>
+          {scheduleLabel}
         </Text>
       ) : null}
     </Stack>
@@ -232,7 +241,7 @@ export function DashboardCard({
   onMoveUp,
   onMoveDown,
 }: DashboardCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isMobile = useIsMobileViewport();
   const sportLabel = useMemo(() => {
     const sportMeta = sports.find((meta) => meta.type === card.sport);
@@ -248,6 +257,13 @@ export function DashboardCard({
   const locationSubtitle = formatSavedDashboardCardSubtitle(card);
   const shouldShowLocationSubtitle =
     locationSubtitle.length > 0 && locationSubtitle !== card.name;
+  const scheduleLabel = card.schedule
+    ? formatDashboardCardSchedule(
+        card.schedule,
+        toIntlLocale(i18n.resolvedLanguage),
+        (time) => t("dashboard.cards.nextDayTime", { time }),
+      )
+    : null;
   const homePath = buildDashboardHomePath(card.sport, card.displayLabel);
   const openHomeAriaLabel = t("dashboard.cards.openHomeAriaLabel", {
     title: cardTitle,
@@ -283,6 +299,7 @@ export function DashboardCard({
             title={cardTitle}
             locationSubtitle={locationSubtitle}
             shouldShowLocationSubtitle={shouldShowLocationSubtitle}
+            scheduleLabel={scheduleLabel}
             openHomeAriaLabel={openHomeAriaLabel}
             lineClamp={isMobile ? 1 : 2}
             actions={<DashboardCardActions {...cardActionsProps} />}
