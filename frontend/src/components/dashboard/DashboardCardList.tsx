@@ -3,11 +3,13 @@ import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { CONTENT_GAP } from "@/config/uiLayout";
 import type { SavedDashboardCard } from "@/domain/dashboard";
 import type { DashboardCardState } from "@/domain/dashboardBatch";
+import type { DashboardViewMode } from "@/domain/dashboardViewMode";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { useDashboardStore } from "@/store/dashboardStore";
 
 interface DashboardCardListProps {
   cards: SavedDashboardCard[];
+  viewMode: DashboardViewMode;
   getCardState: (card: SavedDashboardCard) => DashboardCardState;
 }
 
@@ -16,6 +18,7 @@ interface DashboardCardListProps {
  */
 export function DashboardCardList({
   cards,
+  viewMode,
   getCardState,
 }: DashboardCardListProps) {
   const isMobile = useIsMobileViewport();
@@ -28,6 +31,7 @@ export function DashboardCardList({
       key={card.id}
       card={card}
       cardState={getCardState(card)}
+      viewMode={viewMode}
       index={index}
       totalCount={cards.length}
       onRemove={() => removeCard(card.id)}

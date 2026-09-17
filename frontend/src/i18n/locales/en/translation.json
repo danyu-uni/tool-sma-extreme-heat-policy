@@ -321,7 +321,7 @@
     },
     "header": {
       "title": "My dashboard",
-      "description": "Select a location and sport to add to your dashboard. Risk ratings reflect the current time. The max rating is the highest rating for today. You can add up to 6 cards."
+      "description": "Select a location and sport to add to your dashboard. Switch dashboard mode between Now, My schedule, and Other time period to control what each card shows. You can add up to {{maxCards}} cards."
     },
     "addLocation": {
       "addButton": "Add to dashboard",
@@ -336,7 +336,7 @@
       "body": "Search for a city and add it to start monitoring heat risk across multiple locations."
     },
     "cards": {
-      "title": "{{sport}} in {{location}}",
+      "title": "{{sport}} · {{location}}",
       "openHomeAriaLabel": "Open {{title}} on the home page",
       "delete": "Delete",
       "moreActions": "Card actions",
@@ -344,7 +344,12 @@
       "moveRight": "Move right",
       "moveUp": "Move up",
       "moveDown": "Move down",
-      "nextDayTime": "{{time}} (next day)"
+      "nextDayTime": "{{time}} (next day)",
+      "metrics": {
+        "current": "Current",
+        "average": "Average",
+        "stackedBarAriaLabel": "Risk score {{score}}, {{level}}"
+      }
     },
     "cardErrors": {
       "generic": "Risk data could not be loaded for this location.",
@@ -358,9 +363,21 @@
       "unavailable": "Location search is temporarily unavailable. Please try again.",
       "no_results": "No locations matched your search.",
       "duplicate": "This location is already saved for this sport.",
-      "max_reached": "You can save up to 6 locations.",
+      "max_reached": "You can save up to {{maxCards}} locations.",
       "missing_coordinates": "The selected location could not be resolved.",
       "missing_draft_location": "Select a location before adding to your dashboard."
+    },
+    "viewMode": {
+      "label": "Dashboard mode",
+      "placeholderHint": "My schedule and other time period metrics are coming soon.",
+      "otherTimePeriodMetricLabel": "Selected period",
+      "myScheduleCardPlaceholder": "Average and range metrics will appear here once schedule calculations are connected.",
+      "otherTimePeriodCardPlaceholder": "Average and range metrics will appear here once the selected timeframe is connected.",
+      "options": {
+        "now": "Now",
+        "my_schedule": "My schedule",
+        "other_time_period": "Other time period"
+      }
     }
   },
   "errors": {

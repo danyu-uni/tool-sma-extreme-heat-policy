@@ -8,6 +8,10 @@ import {
   validateAddSavedDashboardCard,
 } from "@/domain/dashboard";
 import { DEFAULT_SPORT_TYPE, type SportType } from "@/domain/sport";
+import {
+  DEFAULT_DASHBOARD_VIEW_MODE,
+  type DashboardViewMode,
+} from "@/domain/dashboardViewMode";
 
 export interface DashboardStoreBootstrapPayload {
   cards: SavedDashboardCard[];
@@ -16,6 +20,7 @@ export interface DashboardStoreBootstrapPayload {
 
 interface DashboardStoreState {
   isBootstrapped: boolean;
+  viewMode: DashboardViewMode;
   draftSport: SportType;
   draftLocation: LocationSuggestion | null;
   cards: SavedDashboardCard[];
@@ -23,6 +28,7 @@ interface DashboardStoreState {
   locationSessionToken: string;
 
   bootstrap: (payload: DashboardStoreBootstrapPayload) => void;
+  setViewMode: (viewMode: DashboardViewMode) => void;
   setDraftSport: (sport: SportType) => void;
   setDraftLocation: (suggestion: LocationSuggestion | null) => void;
   setLocationSearchInput: (value: string) => void;
@@ -74,6 +80,7 @@ function reorderCards(
  */
 export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
   isBootstrapped: false,
+  viewMode: DEFAULT_DASHBOARD_VIEW_MODE,
   draftSport: DEFAULT_SPORT_TYPE,
   draftLocation: null,
   cards: [],
@@ -89,6 +96,10 @@ export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
       locationSearchInput: "",
       locationSessionToken: createSessionToken(),
     });
+  },
+
+  setViewMode: (viewMode) => {
+    set({ viewMode });
   },
 
   setDraftSport: (sport) => {

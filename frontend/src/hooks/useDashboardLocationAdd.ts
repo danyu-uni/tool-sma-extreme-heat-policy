@@ -3,7 +3,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { useEffect, useMemo, useState } from "react";
 import { suggestLocations } from "@/api/mapboxSuggest";
 import {
-  MAX_DASHBOARD_CARDS,
+  canAddDashboardCard,
   resolveDashboardCardScheduleDraft,
   type AddDashboardCardFailureReason,
 } from "@/domain/dashboard";
@@ -120,7 +120,7 @@ export function useDashboardLocationAdd(): UseDashboardLocationAddResult {
   const [debouncedQuery] = useDebouncedValue(query, SUGGEST_DEBOUNCE_MS);
   const debouncedQueryValue = debouncedQuery.trim();
   const hasDebounced = debouncedQueryValue === query;
-  const canAddMoreCards = cards.length < MAX_DASHBOARD_CARDS;
+  const canAddMoreCards = canAddDashboardCard(cards);
   const isShowingCommittedDraftLocation =
     draftLocationValue.length > 0 && query === draftLocationValue;
   const scheduleDraft = resolveDashboardCardScheduleDraft({

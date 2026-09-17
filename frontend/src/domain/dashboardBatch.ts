@@ -21,13 +21,14 @@ export type DashboardCardState =
   | {
       status: "location_error";
       errorCode: string | null;
-      detail: string | null;
     }
   | {
       status: "missing_result";
     }
   | {
       status: "ok";
+      currentRiskScore: number;
+      todayMaxRiskScore: number;
       currentRiskLevel: RiskLevel;
       todayMaxRiskLevel: RiskLevel;
     };
@@ -131,7 +132,6 @@ export function resolveDashboardCardState(
     return {
       status: "location_error",
       errorCode: batchResult.error_code,
-      detail: batchResult.detail,
     };
   }
 
@@ -141,12 +141,13 @@ export function resolveDashboardCardState(
     return {
       status: "location_error",
       errorCode: "risk_calculation_failed",
-      detail: batchResult.detail,
     };
   }
 
   return {
     status: "ok",
+    currentRiskScore: derivedRiskLevels.currentRiskLevelInterpolated,
+    todayMaxRiskScore: derivedRiskLevels.todayMaxRiskLevelInterpolated,
     currentRiskLevel: toRiskLevel(
       derivedRiskLevels.currentRiskLevelInterpolated,
     ),

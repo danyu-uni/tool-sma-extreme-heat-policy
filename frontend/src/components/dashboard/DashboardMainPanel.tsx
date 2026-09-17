@@ -15,6 +15,7 @@ import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { CONTENT_GAP } from "@/config/uiLayout";
+import { MAX_DASHBOARD_CARDS } from "@/domain/dashboard";
 import { isSportType, sports, type SportType } from "@/domain/sport";
 import type { Weekday } from "@/domain/weeklyWindow";
 import { useDashboardLocationAdd } from "@/hooks/useDashboardLocationAdd";
@@ -141,7 +142,9 @@ export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
   return (
     <SectionCard
       title={t("dashboard.header.title")}
-      subtitle={t("dashboard.header.description")}
+      subtitle={t("dashboard.header.description", {
+        maxCards: MAX_DASHBOARD_CARDS,
+      })}
     >
       <Stack gap={CONTENT_GAP}>
         <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
@@ -296,7 +299,9 @@ export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
 
         {!canAddMoreCards ? (
           <Text c="dimmed" fz="sm">
-            {t("dashboard.errors.max_reached")}
+            {t("dashboard.errors.max_reached", {
+              maxCards: MAX_DASHBOARD_CARDS,
+            })}
           </Text>
         ) : null}
 

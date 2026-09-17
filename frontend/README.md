@@ -56,6 +56,21 @@ Notes:
 - `VITE_API_BASE_URL` is required for backend forecast and current-risk data.
 - `.env.local` is ignored by git via `*.local`.
 
+## Dashboard flow
+
+- Route: `/dashboard`.
+- Users can save up to **10** location/sport cards. The frontend cap is
+  `MAX_DASHBOARD_CARDS` in `src/domain/dashboard.ts`; the backend batch
+  endpoint mirrors this with `BATCH_RISK_LOCATION_MAX` in
+  `backend/src/sma_extreme_heat_backend/schemas/batch.py`.
+- Saved cards persist in `localStorage` via `src/pages/dashboard/browserState.ts`.
+- Card metrics load through `POST /home/risk/batch` using the same forecast
+  pipeline as Home.
+- **Now** mode shows the stacked risk bar plus today's max on each card.
+  **My schedule** and **Other time period** are UI placeholders until schedule
+  and timeframe calculations are connected; the selected mode is kept in memory
+  only (not persisted across refresh).
+
 ## Weekly-window development preview (#67)
 
 With the backend and Vite development server running, open

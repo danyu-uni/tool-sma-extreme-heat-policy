@@ -11,7 +11,7 @@ from sma_extreme_heat_backend.schemas.home import (
     RiskProfile,
 )
 
-BATCH_RISK_LOCATION_MAX = 6
+BATCH_RISK_LOCATION_MAX = 10
 
 
 class BatchRiskLocationRequest(BaseModel):

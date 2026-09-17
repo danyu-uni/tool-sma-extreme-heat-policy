@@ -2,7 +2,7 @@ import type { LocationSuggestion } from "@/domain/location";
 import type { SportType } from "@/domain/sport";
 import type { Weekday, WeeklyWindow } from "@/domain/weeklyWindow";
 
-export const MAX_DASHBOARD_CARDS = 6;
+export const MAX_DASHBOARD_CARDS = 10;
 export const COORDINATE_KEY_DECIMALS = 6;
 
 export type DashboardCardSchedule = Omit<WeeklyWindow, "timeZone">;
@@ -56,17 +56,6 @@ export function toBatchResultKey(
 }
 
 /**
- * Builds the secondary city label shown beneath the primary city name on cards.
- */
-export function formatSavedDashboardCardSubtitle(
-  card: Pick<SavedDashboardCard, "name" | "regionName" | "countryName">,
-): string {
-  return [card.regionName, card.countryName]
-    .filter((part): part is string => Boolean(part?.trim()))
-    .join(", ");
-}
-
-/**
  * Builds the home page URL for a saved dashboard card.
  */
 export function buildDashboardHomePath(
@@ -78,6 +67,14 @@ export function buildDashboardHomePath(
   searchParams.set("loc", displayLabel);
 
   return `/?${searchParams.toString()}`;
+}
+
+export function formatSavedDashboardCardSubtitle(
+  card: Pick<SavedDashboardCard, "name" | "regionName" | "countryName">,
+): string {
+  return [card.regionName, card.countryName]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(", ");
 }
 
 export function canAddDashboardCard(

@@ -6,6 +6,7 @@ import {
 } from "@/domain/dashboard";
 import type { LocationSuggestion } from "@/domain/location";
 import { SportType } from "@/domain/sport";
+import { DEFAULT_DASHBOARD_VIEW_MODE } from "@/domain/dashboardViewMode";
 import { useDashboardStore } from "@/store/dashboardStore";
 
 const SYDNEY_LOCATION: LocationSuggestion = {
@@ -39,6 +40,7 @@ const TUESDAY_THURSDAY_EVENING: DashboardCardSchedule = {
 function resetDashboardStore() {
   useDashboardStore.setState({
     isBootstrapped: false,
+    viewMode: DEFAULT_DASHBOARD_VIEW_MODE,
     draftSport: SportType.Soccer,
     draftLocation: null,
     cards: [],
@@ -141,6 +143,11 @@ describe("dashboardStore", () => {
     });
 
     expect(useDashboardStore.getState().cards).toHaveLength(2);
+  });
+
+  it("updates dashboard view mode", () => {
+    useDashboardStore.getState().setViewMode("my_schedule");
+    expect(useDashboardStore.getState().viewMode).toBe("my_schedule");
   });
 
   it("rejects duplicate cards for the same sport and location", () => {

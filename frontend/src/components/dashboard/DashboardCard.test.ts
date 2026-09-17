@@ -1,28 +1,18 @@
 // @vitest-environment jsdom
 import { act, createElement } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { MantineProvider } from "@mantine/core";
-import { MemoryRouter } from "react-router-dom";
-import { createInstance } from "i18next";
-import { I18nextProvider, initReactI18next } from "react-i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import type {
   DashboardCardSchedule,
   SavedDashboardCard,
 } from "@/domain/dashboard";
-import en from "@/i18n/locales/en/translation.json";
-import zh from "@/i18n/locales/zh-CN/translation.json";
+import type { DashboardCardState } from "@/domain/dashboardBatch";
+import { sydneyCard as baseSydneyCard } from "@/test/weeklyWindowFixtures";
+import { createDashboardComponentHost } from "@/test/dashboardComponentHarness";
 
 const sydneyCard: SavedDashboardCard = {
-  id: "sydney",
-  sport: "SOCCER",
-  name: "Sydney",
-  displayLabel: "Sydney, New South Wales, Australia",
+  ...baseSydneyCard,
   regionName: "New South Wales",
-  countryName: "Australia",
-  latitude: -33.86,
-  longitude: 151.21,
 };
 
 const eveningSchedule: DashboardCardSchedule = {
@@ -31,110 +21,121 @@ const eveningSchedule: DashboardCardSchedule = {
   endMinutes: 1200,
 };
 
-let root: Root;
-let host: HTMLDivElement;
-let language: ReturnType<typeof createInstance>;
+const OK_CARD_STATE: DashboardCardState = {
+  status: "ok",
+  currentRiskScore: 1.4,
+  todayMaxRiskScore: 2.8,
+  currentRiskLevel: "low",
+  todayMaxRiskLevel: "high",
+};
+
+const CARD_ACTIONS = {
+  index: 0,
+  totalCount: 1,
+  onRemove: vi.fn(),
+  onMoveUp: vi.fn(),
+  onMoveDown: vi.fn(),
+};
+
+let harness: Awaited<ReturnType<typeof createDashboardComponentHost>>;
 
 beforeEach(async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  vi.stubGlobal(
-    "matchMedia",
-    vi.fn().mockImplementation((query: string) => ({
-      matches: false,
-      media: query,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-    })),
-  );
-  language = createInstance();
-  await language.use(initReactI18next).init({
-    initImmediate: false,
-    lng: "en",
-    fallbackLng: "en",
-    resources: { en: { translation: en }, "zh-CN": { translation: zh } },
-    interpolation: { escapeValue: false },
-  });
-  host = document.createElement("div");
-  document.body.append(host);
-  root = createRoot(host);
+  harness = await createDashboardComponentHost();
 });
 
 afterEach(() => {
-  act(() => root.unmount());
-  host.remove();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
+  harness.cleanup();
+  vi.clearAllMocks();
 });
 
-function render(card: SavedDashboardCard) {
-  act(() =>
-    root.render(
-      createElement(
-        MemoryRouter,
-        null,
-        createElement(
-          I18nextProvider,
-          { i18n: language },
-          createElement(
-            MantineProvider,
-            {
-              env: "test",
-              forceColorScheme: "light",
-              withCssVariables: false,
-              withGlobalClasses: false,
-            },
-            createElement(DashboardCard, {
-              card,
-              cardState: {
-                status: "ok",
-                currentRiskLevel: "moderate",
-                todayMaxRiskLevel: "high",
-              },
-              index: 0,
-              totalCount: 1,
-              onRemove: vi.fn(),
-              onMoveUp: vi.fn(),
-              onMoveDown: vi.fn(),
-            }),
-          ),
-        ),
-      ),
-    ),
+function renderCard(
+  card: SavedDashboardCard = sydneyCard,
+  viewMode: "now" | "my_schedule" | "other_time_period" = "now",
+  cardState: DashboardCardState = OK_CARD_STATE,
+) {
+  harness.render(
+    createElement(DashboardCard, {
+      card,
+      cardState,
+      viewMode,
+      ...CARD_ACTIONS,
+    }),
   );
 }
 
+describe("DashboardCard", () => {
+  it("renders stacked bar metrics in Now mode", () => {
+    renderCard();
+
+    expect(harness.host.textContent).toContain("Current");
+    expect(
+      harness.host.querySelector('[aria-label="Risk score 1.4, Low"]'),
+    ).not.toBeNull();
+    expect(harness.host.textContent).toContain("Max risk:");
+  });
+
+  it("renders schedule placeholder metrics outside Now mode", () => {
+    renderCard(sydneyCard, "my_schedule");
+
+    expect(harness.host.textContent).toContain("Average");
+    expect(harness.host.textContent).toContain(
+      "Average and range metrics will appear here once schedule calculations are connected.",
+    );
+    expect(harness.host.querySelector('[aria-label^="Risk score"]')).toBeNull();
+  });
+
+  it("renders selected-period placeholder metrics for other time period mode", () => {
+    renderCard(sydneyCard, "other_time_period");
+
+    expect(harness.host.textContent).toContain("Selected period");
+    expect(harness.host.textContent).toContain(
+      "Average and range metrics will appear here once the selected timeframe is connected.",
+    );
+  });
+
+  it("shows batch errors instead of metrics placeholders", () => {
+    renderCard(sydneyCard, "my_schedule", {
+      status: "batch_error",
+      reason: "network",
+    });
+
+    expect(harness.host.textContent).toContain(
+      "Risk calculation is unavailable.",
+    );
+    expect(harness.host.textContent).not.toContain("Average");
+  });
+});
+
 describe("dashboard card schedule", () => {
   it("shows the weekdays and times of a saved schedule", () => {
-    render({ ...sydneyCard, schedule: eveningSchedule });
+    renderCard({ ...sydneyCard, schedule: eveningSchedule });
 
-    expect(host.textContent).toContain("Tue, Thu · 6:00 pm – 8:00 pm");
+    expect(harness.host.textContent).toContain("Tue, Thu · 6:00 pm – 8:00 pm");
   });
 
   it("marks an end time of midnight as the next day", () => {
-    render({
+    renderCard({
       ...sydneyCard,
       schedule: { weekdays: [6], startMinutes: 1260, endMinutes: 1440 },
     });
 
-    expect(host.textContent).toContain("Sat · 9:00 pm – 12:00 am (next day)");
+    expect(harness.host.textContent).toContain("Sat · 9:00 pm – 12:00 am (next day)");
   });
 
   it("translates the schedule when the language changes", () => {
-    render({ ...sydneyCard, schedule: eveningSchedule });
+    renderCard({ ...sydneyCard, schedule: eveningSchedule });
 
     act(() => {
-      void language.changeLanguage("zh-CN");
+      void harness.i18n.changeLanguage("zh-CN");
     });
 
-    expect(host.textContent).toContain("周二、周四 · 18:00 – 20:00");
+    expect(harness.host.textContent).toContain("周二、周四 · 18:00 – 20:00");
   });
 
   it("shows no schedule line for a card saved without one", () => {
-    render(sydneyCard);
+    renderCard(sydneyCard);
 
-    expect(host.textContent).toContain("New South Wales, Australia");
-    expect(host.textContent).not.toContain("·");
+    expect(harness.host.textContent).toContain("New South Wales, Australia");
+    expect(harness.host.textContent).not.toMatch(/\d:\d{2}\s*(am|pm)\s*–/i);
   });
 });

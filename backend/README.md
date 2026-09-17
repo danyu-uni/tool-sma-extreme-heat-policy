@@ -179,7 +179,7 @@ Example response:
 
 ### `POST /home/risk/batch`
 
-Dashboard batch endpoint for up to six location and sport pairs in one request.
+Dashboard batch endpoint for up to ten location and sport pairs in one request.
 Each location is calculated with the same forecast pipeline as `POST /home/risk`.
 
 Request body:
@@ -187,7 +187,7 @@ Request body:
 - `profile: string`
   Must be one of `ADULT`, `UNDER_10`, `AGE_10_13`, or `AGE_14_17`.
 - `locations: array`
-  Required. Length `1` to `6`. Each item contains:
+  Required. Length `1` to `10`. Each item contains:
   - `sport: string`
     Must exactly match a pythermalcomfort `Sports` enum name, for example `SOCCER`.
   - `latitude: number`

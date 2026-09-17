@@ -1,10 +1,15 @@
-import { Badge, Box, Group, Paper, Stack, Text } from "@mantine/core";
+import { Box, Group, Paper, Stack, Text } from "@mantine/core";
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import {
+  DashboardCardTodayLine,
+  DashboardMetricColumnLabel,
+} from "@/components/dashboard/DashboardCardMetrics";
 import { DashboardCardActions } from "@/components/dashboard/DashboardCardActions";
 import { DashboardCardSkeleton } from "@/components/dashboard/DashboardSkeletons";
+import { RiskStackedBar } from "@/components/dashboard/RiskStackedBar";
 import {
   buildDashboardHomePath,
   formatSavedDashboardCardSubtitle,
@@ -15,28 +20,20 @@ import {
   toDashboardCardErrorI18nKey,
   type DashboardCardState,
 } from "@/domain/dashboardBatch";
-import { createRiskLevelLabels } from "@/domain/riskLabels";
-import type { RiskLevel } from "@/domain/risk";
-import {
-  getRiskBadgeForegroundColor,
-  getRiskColor,
-  getRiskLevelI18nKeys,
-} from "@/domain/riskRegistry";
+import type { DashboardViewMode } from "@/domain/dashboardViewMode";
 import { sports } from "@/domain/sport";
-import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { toIntlLocale } from "@/i18n/language";
 import { formatDashboardCardSchedule } from "@/lib/scheduleFormat";
-import { CONTENT_GAP, CONTENT_PADDING } from "@/config/uiLayout";
+import { CONTENT_PADDING } from "@/config/uiLayout";
 import {
   DASHBOARD_CARD_CONTROL_LAYER_Z_INDEX,
   DASHBOARD_CARD_HIT_LAYER_Z_INDEX,
 } from "@/config/uiScale";
 
-const RISK_BADGE_SHADOW = "0 10px 24px rgba(15, 23, 42, 0.08)";
-
 interface DashboardCardProps {
   card: SavedDashboardCard;
   cardState: DashboardCardState;
+  viewMode: DashboardViewMode;
   index: number;
   totalCount: number;
   onRemove: () => void;
@@ -44,98 +41,80 @@ interface DashboardCardProps {
   onMoveDown: () => void;
 }
 
-function DashboardCardRiskBadge({
-  riskLevel,
-  size = "lg",
-}: {
-  riskLevel: RiskLevel;
-  size?: "md" | "lg" | "xl";
-}) {
-  const { t } = useTranslation();
-  const longRiskLabels = createRiskLevelLabels((key) => t(key), "long");
-
-  return (
-    <Badge
-      color={getRiskColor(riskLevel)}
-      size={size}
-      radius="xl"
-      styles={{
-        root: {
-          color: getRiskBadgeForegroundColor(riskLevel),
-          boxShadow: RISK_BADGE_SHADOW,
-          flexShrink: 0,
-        },
-        label: {
-          fontWeight: 700,
-          letterSpacing: "0.06em",
-        },
-      }}
-    >
-      {longRiskLabels[riskLevel].toUpperCase()}
-    </Badge>
-  );
-}
-
-function DashboardCardStatusContent({
+function DashboardCardStatusMessage({
   cardState,
-  isMobile,
 }: {
   cardState: DashboardCardState;
-  isMobile: boolean;
 }) {
   const { t } = useTranslation();
 
-  if (cardState.status === "ok") {
-    if (isMobile) {
-      return (
-        <>
-          <DashboardCardRiskBadge
-            riskLevel={cardState.currentRiskLevel}
-            size="lg"
-          />
-          <Text c="dimmed" fz="sm">
-            {t("home.sections.forecast.maxRiskLabel")}{" "}
-            <Text
-              component="span"
-              fw={600}
-              c={getRiskColor(cardState.todayMaxRiskLevel)}
-            >
-              {t(
-                getRiskLevelI18nKeys(cardState.todayMaxRiskLevel).levelKey,
-              ).toUpperCase()}
-            </Text>
-          </Text>
-        </>
-      );
-    }
-
+  if (cardState.status === "batch_error") {
     return (
-      <>
-        <DashboardCardRiskBadge riskLevel={cardState.currentRiskLevel} />
-        <Text c="dimmed" fz="sm">
-          {t("home.sections.forecast.maxRiskLabel")}{" "}
-          <Text
-            component="span"
-            fw={600}
-            c={getRiskColor(cardState.todayMaxRiskLevel)}
-          >
-            {t(
-              getRiskLevelI18nKeys(cardState.todayMaxRiskLevel).levelKey,
-            ).toUpperCase()}
-          </Text>
-        </Text>
-      </>
+      <Text c="dimmed" fz="sm">
+        {t(toDashboardBatchErrorI18nKey(cardState.reason))}
+      </Text>
+    );
+  }
+
+  if (cardState.status === "location_error") {
+    return (
+      <Text c="dimmed" fz="sm">
+        {t(toDashboardCardErrorI18nKey(cardState.errorCode))}
+      </Text>
     );
   }
 
   return (
     <Text c="dimmed" fz="sm">
-      {cardState.status === "batch_error"
-        ? t(toDashboardBatchErrorI18nKey(cardState.reason))
-        : cardState.status === "location_error"
-          ? t(toDashboardCardErrorI18nKey(cardState.errorCode))
-          : t("dashboard.cardErrors.missingResult")}
+      {t("dashboard.cardErrors.missingResult")}
     </Text>
+  );
+}
+
+function DashboardCardMetricsContent({
+  cardState,
+  viewMode,
+}: {
+  cardState: DashboardCardState;
+  viewMode: DashboardViewMode;
+}) {
+  const { t } = useTranslation();
+
+  if (cardState.status !== "ok") {
+    return <DashboardCardStatusMessage cardState={cardState} />;
+  }
+
+  if (viewMode === "now") {
+    return (
+      <Stack gap={4}>
+        <DashboardMetricColumnLabel>
+          {t("dashboard.cards.metrics.current")}
+        </DashboardMetricColumnLabel>
+        <RiskStackedBar score={cardState.currentRiskScore} />
+        <DashboardCardTodayLine
+          score={cardState.todayMaxRiskScore}
+          level={cardState.todayMaxRiskLevel}
+        />
+      </Stack>
+    );
+  }
+
+  const placeholderKey =
+    viewMode === "my_schedule"
+      ? "dashboard.viewMode.myScheduleCardPlaceholder"
+      : "dashboard.viewMode.otherTimePeriodCardPlaceholder";
+
+  return (
+    <Stack gap={4}>
+      <DashboardMetricColumnLabel>
+        {viewMode === "my_schedule"
+          ? t("dashboard.cards.metrics.average")
+          : t("dashboard.viewMode.otherTimePeriodMetricLabel")}
+      </DashboardMetricColumnLabel>
+      <Text c="dimmed" fz="sm">
+        {t(placeholderKey)}
+      </Text>
+    </Stack>
   );
 }
 
@@ -184,6 +163,7 @@ function DashboardCardHeader({
     </Stack>
   );
 }
+
 function DashboardCardTitleLink({
   homePath,
   title,
@@ -230,11 +210,12 @@ function DashboardCardHomeOverlay({ homePath }: { homePath: string }) {
 }
 
 /**
- * Renders a saved dashboard card with current risk and today's max from batch data.
+ * Renders a saved dashboard card with stacked-bar metrics in Now mode.
  */
 export function DashboardCard({
   card,
   cardState,
+  viewMode,
   index,
   totalCount,
   onRemove,
@@ -242,7 +223,6 @@ export function DashboardCard({
   onMoveDown,
 }: DashboardCardProps) {
   const { t, i18n } = useTranslation();
-  const isMobile = useIsMobileViewport();
   const sportLabel = useMemo(() => {
     const sportMeta = sports.find((meta) => meta.type === card.sport);
 
@@ -270,7 +250,7 @@ export function DashboardCard({
   });
 
   if (cardState.status === "loading") {
-    return <DashboardCardSkeleton isMobile={isMobile} />;
+    return <DashboardCardSkeleton />;
   }
 
   const cardActionsProps = {
@@ -289,11 +269,11 @@ export function DashboardCard({
         radius="md"
         p={CONTENT_PADDING.base}
         style={{
-          minHeight: isMobile ? undefined : 160,
+          minHeight: 168,
           cursor: "pointer",
         }}
       >
-        <Stack gap={CONTENT_GAP} justify="space-between" h="100%">
+        <Stack gap="sm">
           <DashboardCardHeader
             homePath={homePath}
             title={cardTitle}
@@ -301,12 +281,12 @@ export function DashboardCard({
             shouldShowLocationSubtitle={shouldShowLocationSubtitle}
             scheduleLabel={scheduleLabel}
             openHomeAriaLabel={openHomeAriaLabel}
-            lineClamp={isMobile ? 1 : 2}
+            lineClamp={2}
             actions={<DashboardCardActions {...cardActionsProps} />}
           />
-          <DashboardCardStatusContent
+          <DashboardCardMetricsContent
             cardState={cardState}
-            isMobile={isMobile}
+            viewMode={viewMode}
           />
         </Stack>
         <DashboardCardHomeOverlay homePath={homePath} />
