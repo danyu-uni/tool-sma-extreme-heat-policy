@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from sma_extreme_heat_backend.schemas.batch import BatchRiskRequest, BatchRiskResponse
 from sma_extreme_heat_backend.schemas.home import RiskRequest, RiskResponse
 from sma_extreme_heat_backend.services.risk_service import RiskService, get_risk_service
 
@@ -31,13 +30,3 @@ async def calculate_home_risk(
     """Calculate the forecast-centric home heat-risk response."""
 
     return await risk_service.calculate_home_risk(payload)
-
-
-@router.post("/home/risk/batch", response_model=BatchRiskResponse, tags=["home"])
-async def calculate_home_risk_batch(
-    payload: BatchRiskRequest,
-    risk_service: Annotated[RiskService, Depends(get_risk_service)],
-) -> BatchRiskResponse:
-    """Calculate dashboard heat-risk forecasts for multiple locations."""
-
-    return await risk_service.calculate_home_risk_batch(payload)
