@@ -36,9 +36,9 @@ export function DashboardViewModeSelector({
         }))}
         aria-label={t("dashboard.viewMode.label")}
       />
-      {value !== "now" ? (
+      {value === "other_time_period" ? (
         <Text c="dimmed" fz="sm">
-          {t("dashboard.viewMode.placeholderHint")}
+          {t("dashboard.viewMode.otherTimePeriodPlaceholderHint")}
         </Text>
       ) : null}
     </Stack>

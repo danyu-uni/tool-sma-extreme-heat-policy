@@ -2,6 +2,7 @@ import {
   MAX_DASHBOARD_CARDS,
   type DashboardCardSchedule,
   type SavedDashboardCard,
+  validateDashboardCardSchedule,
 } from "@/domain/dashboard";
 import { DEFAULT_SPORT_TYPE, type SportType } from "@/domain/sport";
 import { isValidPersistedSport } from "@/pages/home/browserState";
@@ -19,14 +20,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isDashboardCardSchedule(
   value: unknown,
 ): value is DashboardCardSchedule {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.weekdays) ||
+    typeof value.startMinutes !== "number" ||
+    typeof value.endMinutes !== "number"
+  ) {
+    return false;
+  }
+
   return (
-    isRecord(value) &&
-    Array.isArray(value.weekdays) &&
-    value.weekdays.every((day) => Number.isInteger(day)) &&
-    typeof value.startMinutes === "number" &&
-    Number.isFinite(value.startMinutes) &&
-    typeof value.endMinutes === "number" &&
-    Number.isFinite(value.endMinutes)
+    validateDashboardCardSchedule(value as unknown as DashboardCardSchedule) ===
+    null
   );
 }
 

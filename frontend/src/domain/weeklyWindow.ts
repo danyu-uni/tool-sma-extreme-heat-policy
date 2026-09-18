@@ -20,6 +20,11 @@ export type WeeklyWindowValidationError =
   | "unsupported_overnight_window"
   | "invalid_time_zone";
 
+export type WeeklyWindowFieldsValidationError = Exclude<
+  WeeklyWindowValidationError,
+  "invalid_time_zone"
+>;
+
 export type NextWeeklyWindowResult =
   | { status: "ok"; window: ScheduledWindow }
   | {
@@ -50,9 +55,9 @@ function createLocalClock(timeZone: string): Intl.DateTimeFormat {
   });
 }
 
-export function validateWeeklyWindow(
-  window: WeeklyWindow,
-): WeeklyWindowValidationError | null {
+export function validateWeeklyWindowFields(
+  window: Omit<WeeklyWindow, "timeZone">,
+): WeeklyWindowFieldsValidationError | null {
   if (
     window.weekdays.length === 0 ||
     window.weekdays.some(
@@ -76,6 +81,17 @@ export function validateWeeklyWindow(
   if (window.endMinutes < window.startMinutes) {
     return "unsupported_overnight_window";
   }
+  return null;
+}
+
+export function validateWeeklyWindow(
+  window: WeeklyWindow,
+): WeeklyWindowValidationError | null {
+  const fieldsError = validateWeeklyWindowFields(window);
+  if (fieldsError) {
+    return fieldsError;
+  }
+
   try {
     if (window.timeZone.trim().length === 0) return "invalid_time_zone";
     createLocalClock(window.timeZone);

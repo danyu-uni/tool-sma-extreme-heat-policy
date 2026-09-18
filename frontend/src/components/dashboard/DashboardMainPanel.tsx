@@ -284,6 +284,13 @@ export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
           </Group>
         </Group>
 
+        <Group wrap="nowrap" align="flex-start" gap={CONTENT_GAP}>
+          <Box w={FIELD_LABEL_WIDTH} visibleFrom="xs" />
+          <Text c="dimmed" fz="sm" flex={1}>
+            {t("dashboard.addLocation.scheduleRequired")}
+          </Text>
+        </Group>
+
         <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
           <Box w={FIELD_LABEL_WIDTH} visibleFrom="xs" />
           <Button

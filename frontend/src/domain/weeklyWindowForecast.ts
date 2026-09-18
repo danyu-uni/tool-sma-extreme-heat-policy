@@ -10,6 +10,44 @@ export type WindowForecastResult =
 
 const HOUR_MS = 3_600_000;
 
+export interface WindowRiskSummary {
+  averageRiskScore: number;
+  minRiskScore: number;
+  maxRiskScore: number;
+}
+
+/**
+ * Summarizes the real forecast samples selected for a scheduled window.
+ */
+export function summarizeWeeklyWindowRisk(
+  points: readonly ForecastApiPoint[],
+): WindowRiskSummary | null {
+  if (points.length === 0) {
+    return null;
+  }
+
+  let total = 0;
+  let minRiskScore = Number.POSITIVE_INFINITY;
+  let maxRiskScore = Number.NEGATIVE_INFINITY;
+
+  for (const point of points) {
+    const score = point.heat_risk.risk_level_interpolated;
+    if (!Number.isFinite(score)) {
+      return null;
+    }
+
+    total += score;
+    minRiskScore = Math.min(minRiskScore, score);
+    maxRiskScore = Math.max(maxRiskScore, score);
+  }
+
+  return {
+    averageRiskScore: total / points.length,
+    minRiskScore,
+    maxRiskScore,
+  };
+}
+
 /**
  * Selects actual hourly samples inside the window, including both endpoints.
  * Samples at/before the start and at/after the end must bracket the whole

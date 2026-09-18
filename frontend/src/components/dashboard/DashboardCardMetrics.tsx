@@ -69,3 +69,35 @@ export function DashboardCardTodayLine({
     </MetricSecondaryLine>
   );
 }
+
+interface DashboardCardRangeLineProps {
+  minScore: number;
+  minLevel: RiskLevel;
+  maxScore: number;
+  maxLevel: RiskLevel;
+}
+
+export function DashboardCardRangeLine({
+  minScore,
+  minLevel,
+  maxScore,
+  maxLevel,
+}: DashboardCardRangeLineProps) {
+  const { t } = useTranslation();
+
+  return (
+    <MetricSecondaryLine>
+      {t("dashboard.cards.metrics.minimum")}{" "}
+      <MetricSecondarySpan>{minScore.toFixed(1)} </MetricSecondarySpan>
+      <MetricSecondarySpan color={getRiskColor(minLevel)} fw={600}>
+        {t(getRiskLevelI18nKeys(minLevel).levelKey).toUpperCase()}
+      </MetricSecondarySpan>
+      {t("dashboard.cards.metrics.rangeSeparator")}
+      {t("dashboard.cards.metrics.maximum")}{" "}
+      <MetricSecondarySpan>{maxScore.toFixed(1)} </MetricSecondarySpan>
+      <MetricSecondarySpan color={getRiskColor(maxLevel)} fw={600}>
+        {t(getRiskLevelI18nKeys(maxLevel).levelKey).toUpperCase()}
+      </MetricSecondarySpan>
+    </MetricSecondaryLine>
+  );
+}

@@ -48,4 +48,17 @@ describe("resolveDashboardCardScheduleDraft", () => {
       schedule: { weekdays: [0], startMinutes: 0, endMinutes: 60 },
     });
   });
+
+  it("rejects an overnight draft without needing a timezone", () => {
+    expect(
+      resolveDashboardCardScheduleDraft({
+        weekdays: [2],
+        startMinutes: 1200,
+        endMinutes: 1080,
+      }),
+    ).toEqual({
+      status: "invalid",
+      reason: "unsupported_overnight_window",
+    });
+  });
 });

@@ -132,7 +132,7 @@ export function useDashboardLocationAdd(): UseDashboardLocationAddResult {
     canAddMoreCards &&
     hasResolvedCoordinates(draftLocation) &&
     !isResolvingLocation &&
-    scheduleDraft.status !== "incomplete";
+    scheduleDraft.status === "complete";
 
   const shouldSuggest =
     hasMapboxToken &&
@@ -276,15 +276,12 @@ export function useDashboardLocationAdd(): UseDashboardLocationAddResult {
       return;
     }
 
-    if (scheduleDraft.status === "incomplete") {
+    if (scheduleDraft.status !== "complete") {
+      setAddErrorReason("invalid_schedule");
       return;
     }
 
-    const result = addCard(
-      draftSport,
-      draftLocation,
-      scheduleDraft.status === "complete" ? scheduleDraft.schedule : undefined,
-    );
+    const result = addCard(draftSport, draftLocation, scheduleDraft.schedule);
     if (!result.ok) {
       setAddErrorReason(result.reason);
       return;

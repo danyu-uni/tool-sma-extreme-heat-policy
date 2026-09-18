@@ -19,6 +19,10 @@ import {
   type SavedDashboardCard,
 } from "@/domain/dashboard";
 import type { WeeklyPreviewSource } from "@/domain/weeklyWindowPreview";
+import {
+  resolveDashboardScheduledCardState,
+  type DashboardScheduledCardState,
+} from "@/domain/dashboardScheduledCardState";
 import { useDashboardStore } from "@/store/dashboardStore";
 
 export interface DashboardHeatRiskRefreshResult {
@@ -29,6 +33,10 @@ export interface DashboardHeatRiskRefreshResult {
 interface UseDashboardHeatRiskResult {
   getWeeklyPreviewSource: (card: SavedDashboardCard) => WeeklyPreviewSource;
   getCardState: (card: SavedDashboardCard) => DashboardCardState;
+  getScheduledCardState: (
+    card: SavedDashboardCard,
+    now: Date,
+  ) => DashboardScheduledCardState;
   hasLoadedCardData: boolean;
   refresh: () => Promise<DashboardHeatRiskRefreshResult>;
 }
@@ -171,10 +179,22 @@ export function useDashboardHeatRisk(): UseDashboardHeatRiskResult {
     return resolveDashboardCardQueryState(getCardQueryView(card));
   }
 
+  function getScheduledCardState(
+    card: SavedDashboardCard,
+    now: Date,
+  ): DashboardScheduledCardState {
+    return resolveDashboardScheduledCardState(
+      card,
+      getCardQueryView(card),
+      now,
+    );
+  }
+
   return {
     getWeeklyPreviewSource: (card) =>
       resolveWeeklyPreviewSourceFromQuery(getCardQueryView(card)),
     getCardState,
+    getScheduledCardState,
     hasLoadedCardData,
     refresh,
   };

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getNextWeeklyWindow,
   validateWeeklyWindow,
+  validateWeeklyWindowFields,
   type WeeklyWindow,
 } from "@/domain/weeklyWindow";
 
@@ -13,6 +14,23 @@ const TUESDAY: WeeklyWindow = {
 };
 
 describe("weekly window validation", () => {
+  it("validates form fields before a location timezone is available", () => {
+    expect(
+      validateWeeklyWindowFields({
+        weekdays: [2],
+        startMinutes: 1080,
+        endMinutes: 1200,
+      }),
+    ).toBeNull();
+    expect(
+      validateWeeklyWindowFields({
+        weekdays: [2],
+        startMinutes: 1200,
+        endMinutes: 1080,
+      }),
+    ).toBe("unsupported_overnight_window");
+  });
+
   it.each([
     [{ weekdays: [] }, "invalid_weekdays"],
     [{ weekdays: [2, 2] }, "invalid_weekdays"],

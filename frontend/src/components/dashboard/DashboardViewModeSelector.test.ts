@@ -29,7 +29,7 @@ describe("DashboardViewModeSelector", () => {
     expect(harness.host.textContent).toContain("Other time period");
   });
 
-  it("shows the placeholder hint for non-Now modes", () => {
+  it("does not show a placeholder for the implemented My schedule mode", () => {
     harness.render(
       createElement(DashboardViewModeSelector, {
         value: "my_schedule",
@@ -38,8 +38,20 @@ describe("DashboardViewModeSelector", () => {
       { withRouter: false },
     );
 
+    expect(harness.host.textContent).not.toContain("coming soon");
+  });
+
+  it("keeps the placeholder hint for Other time period", () => {
+    harness.render(
+      createElement(DashboardViewModeSelector, {
+        value: "other_time_period",
+        onChange: vi.fn(),
+      }),
+      { withRouter: false },
+    );
+
     expect(harness.host.textContent).toContain(
-      "My schedule and other time period metrics are coming soon.",
+      "Other time period metrics are coming soon.",
     );
   });
 

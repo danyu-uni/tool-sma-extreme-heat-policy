@@ -3,6 +3,7 @@ import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { CONTENT_GAP } from "@/config/uiLayout";
 import type { SavedDashboardCard } from "@/domain/dashboard";
 import type { DashboardCardState } from "@/domain/dashboardCardState";
+import type { DashboardScheduledCardState } from "@/domain/dashboardScheduledCardState";
 import type { DashboardViewMode } from "@/domain/dashboardViewMode";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { useDashboardStore } from "@/store/dashboardStore";
@@ -11,6 +12,11 @@ interface DashboardCardListProps {
   cards: SavedDashboardCard[];
   viewMode: DashboardViewMode;
   getCardState: (card: SavedDashboardCard) => DashboardCardState;
+  getScheduledCardState: (
+    card: SavedDashboardCard,
+    now: Date,
+  ) => DashboardScheduledCardState;
+  scheduleNow: Date;
 }
 
 /**
@@ -20,6 +26,8 @@ export function DashboardCardList({
   cards,
   viewMode,
   getCardState,
+  getScheduledCardState,
+  scheduleNow,
 }: DashboardCardListProps) {
   const isMobile = useIsMobileViewport();
   const removeCard = useDashboardStore((state) => state.removeCard);
@@ -31,6 +39,11 @@ export function DashboardCardList({
       key={card.id}
       card={card}
       cardState={getCardState(card)}
+      scheduledCardState={
+        viewMode === "my_schedule"
+          ? getScheduledCardState(card, scheduleNow)
+          : null
+      }
       viewMode={viewMode}
       index={index}
       totalCount={cards.length}

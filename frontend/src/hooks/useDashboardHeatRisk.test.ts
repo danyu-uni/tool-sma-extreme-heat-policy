@@ -66,6 +66,21 @@ function readCardStatus(card = sydneyCard): string {
   return renderToStaticMarkup(createElement(Probe));
 }
 
+function readScheduledCardStatus(
+  card: SavedDashboardCard = {
+    ...sydneyCard,
+    schedule: { weekdays: [2], startMinutes: 1080, endMinutes: 1200 },
+  },
+): string {
+  function Probe() {
+    return useDashboardHeatRisk().getScheduledCardState(
+      card,
+      new Date("2026-09-15T00:00:00Z"),
+    ).status;
+  }
+  return renderToStaticMarkup(createElement(Probe));
+}
+
 describe("weekly preview query adapter", () => {
   it("returns the matching card forecast", () => {
     expect(readWeeklyStatus()).toBe("ok");
@@ -109,6 +124,10 @@ describe("weekly preview query adapter", () => {
 });
 
 describe("dashboard card query adapter", () => {
+  it("connects a saved schedule to the matching card forecast", () => {
+    expect(readScheduledCardStatus()).toBe("ok");
+  });
+
   it("returns ok card metrics for a loaded card", () => {
     expect(
       resolveDashboardCardQueryState({

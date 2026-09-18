@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { ForecastApiPoint } from "@/api/heatRisk";
-import { selectWeeklyWindowForecast } from "@/domain/weeklyWindowForecast";
+import {
+  selectWeeklyWindowForecast,
+  summarizeWeeklyWindowRisk,
+} from "@/domain/weeklyWindowForecast";
 import {
   getNextWeeklyWindow,
   type ScheduledWindow,
@@ -142,5 +145,22 @@ describe("weekly window forecast selection", () => {
     expect(
       selectWeeklyWindowForecast([point(8), point(9), point(10)], next.window),
     ).toEqual({ status: "incomplete_forecast" });
+  });
+});
+
+describe("weekly window risk summary", () => {
+  it("uses the arithmetic mean and reports explicit minimum and maximum scores", () => {
+    expect(
+      summarizeWeeklyWindowRisk([point(8, 0.9), point(9, 1.6), point(10, 2.3)]),
+    ).toEqual({
+      averageRiskScore: 1.5999999999999999,
+      minRiskScore: 0.9,
+      maxRiskScore: 2.3,
+    });
+  });
+
+  it("rejects empty or non-finite samples", () => {
+    expect(summarizeWeeklyWindowRisk([])).toBeNull();
+    expect(summarizeWeeklyWindowRisk([point(8, NaN)])).toBeNull();
   });
 });

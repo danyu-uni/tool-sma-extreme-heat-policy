@@ -18,6 +18,7 @@ import { SECTION_STACK_GAP } from "@/config/uiLayout";
 import { MAX_DASHBOARD_CARDS } from "@/domain/dashboard";
 import type { DashboardLocationAddErrorReason } from "@/hooks/useDashboardLocationAdd";
 import { useDashboardHeatRisk } from "@/hooks/useDashboardHeatRisk";
+import { useDashboardScheduleClock } from "@/hooks/useDashboardScheduleClock";
 import {
   createDashboardRefreshFailedToast,
   createDashboardRiskUpdatedToast,
@@ -45,6 +46,7 @@ export function DashboardPage() {
   const viewMode = useDashboardStore((state) => state.viewMode);
   const setViewMode = useDashboardStore((state) => state.setViewMode);
   const heatRisk = useDashboardHeatRisk();
+  const scheduleNow = useDashboardScheduleClock();
   const [toastEvent, setToastEvent] = useState<DashboardToastEvent | null>(
     null,
   );
@@ -130,6 +132,8 @@ export function DashboardPage() {
               cards={cards}
               viewMode={viewMode}
               getCardState={heatRisk.getCardState}
+              getScheduledCardState={heatRisk.getScheduledCardState}
+              scheduleNow={scheduleNow}
             />
           </Stack>
         ) : null}

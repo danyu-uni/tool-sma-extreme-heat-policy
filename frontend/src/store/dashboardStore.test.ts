@@ -37,6 +37,12 @@ const TUESDAY_THURSDAY_EVENING: DashboardCardSchedule = {
   endMinutes: 1200,
 };
 
+const MONDAY_MORNING: DashboardCardSchedule = {
+  weekdays: [1],
+  startMinutes: 540,
+  endMinutes: 660,
+};
+
 function resetDashboardStore() {
   useDashboardStore.setState({
     isBootstrapped: false,
@@ -87,14 +93,20 @@ describe("dashboardStore", () => {
 
   it("adds, reorders, and removes saved cards", () => {
     expect(
-      useDashboardStore.getState().addCard(SportType.Soccer, SYDNEY_LOCATION),
+      useDashboardStore
+        .getState()
+        .addCard(SportType.Soccer, SYDNEY_LOCATION, TUESDAY_THURSDAY_EVENING),
     ).toEqual({
       ok: true,
     });
     expect(
       useDashboardStore
         .getState()
-        .addCard(SportType.Soccer, MELBOURNE_LOCATION),
+        .addCard(
+          SportType.Soccer,
+          MELBOURNE_LOCATION,
+          TUESDAY_THURSDAY_EVENING,
+        ),
     ).toEqual({
       ok: true,
     });
@@ -124,20 +136,18 @@ describe("dashboardStore", () => {
     );
   });
 
-  it("adds a card without a schedule", () => {
-    useDashboardStore.getState().addCard(SportType.Soccer, SYDNEY_LOCATION);
-
-    expect(useDashboardStore.getState().cards[0]?.schedule).toBeUndefined();
-  });
-
   it("allows the same location for different sports", () => {
     expect(
-      useDashboardStore.getState().addCard(SportType.Soccer, SYDNEY_LOCATION),
+      useDashboardStore
+        .getState()
+        .addCard(SportType.Soccer, SYDNEY_LOCATION, TUESDAY_THURSDAY_EVENING),
     ).toEqual({
       ok: true,
     });
     expect(
-      useDashboardStore.getState().addCard(SportType.Cricket, SYDNEY_LOCATION),
+      useDashboardStore
+        .getState()
+        .addCard(SportType.Cricket, SYDNEY_LOCATION, TUESDAY_THURSDAY_EVENING),
     ).toEqual({
       ok: true,
     });
@@ -152,12 +162,19 @@ describe("dashboardStore", () => {
 
   it("rejects duplicate cards for the same sport and location", () => {
     expect(
-      validateAddSavedDashboardCard([], SportType.Soccer, SYDNEY_LOCATION),
+      validateAddSavedDashboardCard(
+        [],
+        SportType.Soccer,
+        SYDNEY_LOCATION,
+        TUESDAY_THURSDAY_EVENING,
+      ),
     ).toEqual({
       ok: true,
     });
 
-    useDashboardStore.getState().addCard(SportType.Soccer, SYDNEY_LOCATION);
+    useDashboardStore
+      .getState()
+      .addCard(SportType.Soccer, SYDNEY_LOCATION, TUESDAY_THURSDAY_EVENING);
 
     expect(
       isDuplicateSavedDashboardCard(useDashboardStore.getState().cards, {
@@ -165,14 +182,45 @@ describe("dashboardStore", () => {
         latitude: SYDNEY_LOCATION.latitude as number,
         longitude: SYDNEY_LOCATION.longitude as number,
         mapboxId: SYDNEY_LOCATION.mapboxId,
+        schedule: {
+          ...TUESDAY_THURSDAY_EVENING,
+          weekdays: [4, 2],
+        },
       }),
     ).toBe(true);
 
     expect(
-      useDashboardStore.getState().addCard(SportType.Soccer, SYDNEY_LOCATION),
+      useDashboardStore
+        .getState()
+        .addCard(SportType.Soccer, SYDNEY_LOCATION, TUESDAY_THURSDAY_EVENING),
     ).toEqual({
       ok: false,
       reason: "duplicate",
     });
+  });
+
+  it("allows the same sport and location with a different schedule", () => {
+    expect(
+      useDashboardStore
+        .getState()
+        .addCard(SportType.Soccer, SYDNEY_LOCATION, TUESDAY_THURSDAY_EVENING),
+    ).toEqual({ ok: true });
+    expect(
+      useDashboardStore
+        .getState()
+        .addCard(SportType.Soccer, SYDNEY_LOCATION, MONDAY_MORNING),
+    ).toEqual({ ok: true });
+
+    expect(useDashboardStore.getState().cards).toHaveLength(2);
+  });
+
+  it("rejects an invalid schedule at the store boundary", () => {
+    expect(
+      useDashboardStore.getState().addCard(SportType.Soccer, SYDNEY_LOCATION, {
+        weekdays: [2],
+        startMinutes: 1200,
+        endMinutes: 1080,
+      }),
+    ).toEqual({ ok: false, reason: "invalid_schedule" });
   });
 });

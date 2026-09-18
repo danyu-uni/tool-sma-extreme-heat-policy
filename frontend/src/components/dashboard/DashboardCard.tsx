@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
+  DashboardCardRangeLine,
   DashboardCardTodayLine,
   DashboardMetricColumnLabel,
 } from "@/components/dashboard/DashboardCardMetrics";
@@ -15,6 +16,7 @@ import {
   type SavedDashboardCard,
 } from "@/domain/dashboard";
 import { type DashboardCardState } from "@/domain/dashboardCardState";
+import type { DashboardScheduledCardState } from "@/domain/dashboardScheduledCardState";
 import {
   toDashboardFetchErrorI18nKey,
   toDashboardLocationErrorI18nKey,
@@ -32,6 +34,7 @@ import {
 interface DashboardCardProps {
   card: SavedDashboardCard;
   cardState: DashboardCardState;
+  scheduledCardState: DashboardScheduledCardState | null;
   viewMode: DashboardViewMode;
   index: number;
   totalCount: number;
@@ -75,18 +78,48 @@ function DashboardCardStatusMessage({
 
 function DashboardCardMetricsContent({
   cardState,
+  scheduledCardState,
   viewMode,
 }: {
   cardState: DashboardCardState;
+  scheduledCardState: DashboardScheduledCardState | null;
   viewMode: DashboardViewMode;
 }) {
   const { t } = useTranslation();
 
-  if (cardState.status !== "ok") {
+  const activeState =
+    viewMode === "my_schedule" ? scheduledCardState : cardState;
+
+  if (!activeState || activeState.status !== "ok") {
+    if (
+      viewMode === "my_schedule" &&
+      activeState &&
+      !["loading", "fetch_error", "location_error", "missing_result"].includes(
+        activeState.status,
+      )
+    ) {
+      const scheduleErrorKey =
+        activeState.status === "missing_schedule"
+          ? "dashboard.cardErrors.missingSchedule"
+          : activeState.status === "incomplete_forecast"
+            ? "dashboard.cardErrors.scheduleForecastUnavailable"
+            : "dashboard.cardErrors.scheduleUnavailable";
+
+      return (
+        <Text c="dimmed" fz="sm">
+          {t(scheduleErrorKey)}
+        </Text>
+      );
+    }
+
     return <DashboardCardStatusMessage cardState={cardState} />;
   }
 
   if (viewMode === "now") {
+    if (cardState.status !== "ok") {
+      return <DashboardCardStatusMessage cardState={cardState} />;
+    }
+
     return (
       <Stack gap={4}>
         <DashboardMetricColumnLabel>
@@ -101,20 +134,34 @@ function DashboardCardMetricsContent({
     );
   }
 
-  const placeholderKey =
-    viewMode === "my_schedule"
-      ? "dashboard.viewMode.myScheduleCardPlaceholder"
-      : "dashboard.viewMode.otherTimePeriodCardPlaceholder";
+  if (viewMode === "my_schedule") {
+    if (!scheduledCardState || scheduledCardState.status !== "ok") {
+      return null;
+    }
+
+    return (
+      <Stack gap={4}>
+        <DashboardMetricColumnLabel>
+          {t("dashboard.cards.metrics.average")}
+        </DashboardMetricColumnLabel>
+        <RiskStackedBar score={scheduledCardState.averageRiskScore} />
+        <DashboardCardRangeLine
+          minScore={scheduledCardState.minRiskScore}
+          minLevel={scheduledCardState.minRiskLevel}
+          maxScore={scheduledCardState.maxRiskScore}
+          maxLevel={scheduledCardState.maxRiskLevel}
+        />
+      </Stack>
+    );
+  }
 
   return (
     <Stack gap={4}>
       <DashboardMetricColumnLabel>
-        {viewMode === "my_schedule"
-          ? t("dashboard.cards.metrics.average")
-          : t("dashboard.viewMode.otherTimePeriodMetricLabel")}
+        {t("dashboard.viewMode.otherTimePeriodMetricLabel")}
       </DashboardMetricColumnLabel>
       <Text c="dimmed" fz="sm">
-        {t(placeholderKey)}
+        {t("dashboard.viewMode.otherTimePeriodCardPlaceholder")}
       </Text>
     </Stack>
   );
@@ -203,11 +250,12 @@ function DashboardCardHomeOverlay({ homePath }: { homePath: string }) {
 }
 
 /**
- * Renders a saved dashboard card with stacked-bar metrics in Now mode.
+ * Renders a saved dashboard card for the active dashboard mode.
  */
 export function DashboardCard({
   card,
   cardState,
+  scheduledCardState,
   viewMode,
   index,
   totalCount,
@@ -239,7 +287,10 @@ export function DashboardCard({
     title: cardTitle,
   });
 
-  if (cardState.status === "loading") {
+  if (
+    cardState.status === "loading" ||
+    (viewMode === "my_schedule" && scheduledCardState?.status === "loading")
+  ) {
     return <DashboardCardSkeleton />;
   }
 
@@ -274,6 +325,7 @@ export function DashboardCard({
           />
           <DashboardCardMetricsContent
             cardState={cardState}
+            scheduledCardState={scheduledCardState}
             viewMode={viewMode}
           />
         </Stack>

@@ -35,7 +35,7 @@ interface DashboardStoreState {
   addCard: (
     sport: SportType,
     suggestion: LocationSuggestion,
-    schedule?: DashboardCardSchedule,
+    schedule: DashboardCardSchedule,
   ) => AddDashboardCardResult;
   removeCard: (cardId: string) => void;
   moveCardUp: (cardId: string) => void;
@@ -137,6 +137,7 @@ export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
       get().cards,
       sport,
       suggestion,
+      schedule,
     );
     if (!validation.ok) {
       return validation;

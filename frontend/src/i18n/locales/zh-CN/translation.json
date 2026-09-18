@@ -330,7 +330,8 @@
       "timeLabel": "时间",
       "startTime": "开始时间",
       "endTime": "结束时间",
-      "midnight": "次日零点"
+      "midnight": "次日零点",
+      "scheduleRequired": "请选择至少一个星期日期，结束时间须晚于开始时间，并在当天或次日零点结束。所有日程字段均为必填项。"
     },
     "emptyState": {
       "title": "尚未保存任何地点",
@@ -349,6 +350,9 @@
       "metrics": {
         "current": "当前",
         "average": "平均",
+        "minimum": "最低：",
+        "maximum": "最高：",
+        "rangeSeparator": " · ",
         "stackedBarAriaLabel": "风险分数 {{score}}，{{level}}"
       }
     },
@@ -356,23 +360,26 @@
       "generic": "无法加载此地点的风险数据。",
       "missingResult": "此地点的风险数据不可用。",
       "unknownInputs": "此地点的天气输入数据不可用。",
-      "riskCalculationFailed": "无法计算此地点的风险。"
+      "riskCalculationFailed": "无法计算此地点的风险。",
+      "missingSchedule": "此卡片没有已保存的日程。",
+      "scheduleForecastUnavailable": "天气预报暂未覆盖下一次日程时段。",
+      "scheduleUnavailable": "无法计算下一次日程时段。"
     },
     "errors": {
       "missing_token": "Mapbox 未配置，地点搜索不可用。",
       "retrieve_failed": "无法解析所选地点，请重试。",
       "unavailable": "地点搜索暂时不可用，请重试。",
       "no_results": "没有匹配的地点。",
-      "duplicate": "此地点和运动项目组合已保存。",
+      "duplicate": "此地点、运动项目和日程组合已保存。",
       "max_reached": "最多可保存 {{maxCards}} 个地点。",
       "missing_coordinates": "无法解析所选地点。",
-      "missing_draft_location": "请先选择地点，再添加到仪表盘。"
+      "missing_draft_location": "请先选择地点，再添加到仪表盘。",
+      "invalid_schedule": "请选择至少一个星期日期和有效的当天时间段。"
     },
     "viewMode": {
       "label": "仪表盘模式",
-      "placeholderHint": "“我的日程”和“其他时间段”指标即将推出。",
+      "otherTimePeriodPlaceholderHint": "“其他时间段”指标即将推出。",
       "otherTimePeriodMetricLabel": "所选时段",
-      "myScheduleCardPlaceholder": "连接日程计算后，这里将显示平均和风险范围指标。",
       "otherTimePeriodCardPlaceholder": "连接所选时段后，这里将显示平均和风险范围指标。",
       "options": {
         "now": "当前",

@@ -7,6 +7,7 @@ import type {
   SavedDashboardCard,
 } from "@/domain/dashboard";
 import type { DashboardCardState } from "@/domain/dashboardCardState";
+import type { DashboardScheduledCardState } from "@/domain/dashboardScheduledCardState";
 import { sydneyCard as baseSydneyCard } from "@/test/weeklyWindowFixtures";
 import { createDashboardComponentHost } from "@/test/dashboardComponentHarness";
 
@@ -27,6 +28,22 @@ const OK_CARD_STATE: DashboardCardState = {
   todayMaxRiskScore: 2.8,
   currentRiskLevel: "low",
   todayMaxRiskLevel: "high",
+};
+
+const OK_SCHEDULED_CARD_STATE: DashboardScheduledCardState = {
+  status: "ok",
+  window: {
+    localDate: "2026-09-15",
+    timeZone: "Australia/Sydney",
+    startUtc: "2026-09-15T08:00:00.000Z",
+    endUtc: "2026-09-15T10:00:00.000Z",
+  },
+  averageRiskScore: 1.6,
+  minRiskScore: 0.9,
+  maxRiskScore: 2.3,
+  averageRiskLevel: "low",
+  minRiskLevel: "low",
+  maxRiskLevel: "moderate",
 };
 
 const CARD_ACTIONS = {
@@ -57,6 +74,12 @@ function renderCard(
     createElement(DashboardCard, {
       card,
       cardState,
+      scheduledCardState:
+        viewMode === "my_schedule"
+          ? cardState.status === "ok"
+            ? OK_SCHEDULED_CARD_STATE
+            : cardState
+          : null,
       viewMode,
       ...CARD_ACTIONS,
     }),
@@ -74,14 +97,15 @@ describe("DashboardCard", () => {
     expect(harness.host.textContent).toContain("Max risk:");
   });
 
-  it("renders schedule placeholder metrics outside Now mode", () => {
+  it("renders average and explicit Min/Max metrics in My schedule mode", () => {
     renderCard(sydneyCard, "my_schedule");
 
     expect(harness.host.textContent).toContain("Average");
-    expect(harness.host.textContent).toContain(
-      "Average and range metrics will appear here once schedule calculations are connected.",
-    );
-    expect(harness.host.querySelector('[aria-label^="Risk score"]')).toBeNull();
+    expect(
+      harness.host.querySelector('[aria-label="Risk score 1.6, Low"]'),
+    ).not.toBeNull();
+    expect(harness.host.textContent).toContain("Min: 0.9 LOW");
+    expect(harness.host.textContent).toContain("Max: 2.3 MODERATE");
   });
 
   it("renders selected-period placeholder metrics for other time period mode", () => {

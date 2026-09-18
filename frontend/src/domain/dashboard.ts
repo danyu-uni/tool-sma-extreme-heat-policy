@@ -1,6 +1,11 @@
 import type { LocationSuggestion } from "@/domain/location";
 import type { SportType } from "@/domain/sport";
-import type { Weekday, WeeklyWindow } from "@/domain/weeklyWindow";
+import {
+  validateWeeklyWindowFields,
+  type Weekday,
+  type WeeklyWindow,
+  type WeeklyWindowFieldsValidationError,
+} from "@/domain/weeklyWindow";
 
 export const MAX_DASHBOARD_CARDS = 10;
 export const COORDINATE_KEY_DECIMALS = 6;
@@ -16,6 +21,7 @@ export interface DashboardCardScheduleDraft {
 export type ResolvedDashboardCardScheduleDraft =
   | { status: "empty" }
   | { status: "incomplete" }
+  | { status: "invalid"; reason: WeeklyWindowFieldsValidationError }
   | { status: "complete"; schedule: DashboardCardSchedule };
 
 export interface SavedDashboardCard {
@@ -34,7 +40,8 @@ export interface SavedDashboardCard {
 export type AddDashboardCardFailureReason =
   | "duplicate"
   | "max_reached"
-  | "missing_coordinates";
+  | "missing_coordinates"
+  | "invalid_schedule";
 
 export type AddDashboardCardResult =
   | { ok: true }
@@ -76,14 +83,15 @@ export function canAddDashboardCard(
 }
 
 /**
- * Returns true when the candidate matches a saved card by sport and place.
+ * Returns true when the candidate matches a saved card by sport, place, and
+ * normalized weekly schedule.
  */
 export function isDuplicateSavedDashboardCard(
   cards: readonly SavedDashboardCard[],
   candidate: Pick<
     SavedDashboardCard,
-    "sport" | "latitude" | "longitude" | "mapboxId"
-  >,
+    "sport" | "latitude" | "longitude" | "mapboxId" | "schedule"
+  > & { schedule: DashboardCardSchedule },
 ): boolean {
   const candidateKey = toDashboardCardKey(
     candidate.sport,
@@ -96,19 +104,45 @@ export function isDuplicateSavedDashboardCard(
       return false;
     }
 
-    if (
-      card.mapboxId &&
-      candidate.mapboxId &&
-      card.mapboxId === candidate.mapboxId
-    ) {
-      return true;
-    }
+    const hasSamePlace =
+      (card.mapboxId &&
+        candidate.mapboxId &&
+        card.mapboxId === candidate.mapboxId) ||
+      toDashboardCardKey(card.sport, card.latitude, card.longitude) ===
+        candidateKey;
 
     return (
-      toDashboardCardKey(card.sport, card.latitude, card.longitude) ===
-      candidateKey
+      hasSamePlace &&
+      card.schedule !== undefined &&
+      areDashboardCardSchedulesEqual(card.schedule, candidate.schedule)
     );
   });
+}
+
+function areDashboardCardSchedulesEqual(
+  left: DashboardCardSchedule,
+  right: DashboardCardSchedule,
+): boolean {
+  if (
+    left.startMinutes !== right.startMinutes ||
+    left.endMinutes !== right.endMinutes
+  ) {
+    return false;
+  }
+
+  const leftWeekdays = [...left.weekdays].sort((a, b) => a - b);
+  const rightWeekdays = [...right.weekdays].sort((a, b) => a - b);
+
+  return (
+    leftWeekdays.length === rightWeekdays.length &&
+    leftWeekdays.every((day, index) => day === rightWeekdays[index])
+  );
+}
+
+export function validateDashboardCardSchedule(
+  schedule: DashboardCardSchedule,
+): WeeklyWindowFieldsValidationError | null {
+  return validateWeeklyWindowFields(schedule);
 }
 
 function createDashboardCardId(): string {
@@ -128,7 +162,7 @@ function createDashboardCardId(): string {
 export function createSavedDashboardCardFromSuggestion(
   sport: SportType,
   suggestion: LocationSuggestion & { latitude: number; longitude: number },
-  schedule?: DashboardCardSchedule,
+  schedule: DashboardCardSchedule,
 ): SavedDashboardCard {
   return {
     id: createDashboardCardId(),
@@ -151,6 +185,7 @@ export function validateAddSavedDashboardCard(
   cards: readonly SavedDashboardCard[],
   sport: SportType,
   suggestion: LocationSuggestion,
+  schedule: DashboardCardSchedule,
 ): AddDashboardCardResult {
   if (!canAddDashboardCard(cards)) {
     return { ok: false, reason: "max_reached" };
@@ -160,12 +195,17 @@ export function validateAddSavedDashboardCard(
     return { ok: false, reason: "missing_coordinates" };
   }
 
+  if (validateDashboardCardSchedule(schedule)) {
+    return { ok: false, reason: "invalid_schedule" };
+  }
+
   if (
     isDuplicateSavedDashboardCard(cards, {
       sport,
       latitude: suggestion.latitude,
       longitude: suggestion.longitude,
       mapboxId: suggestion.mapboxId,
+      schedule,
     })
   ) {
     return { ok: false, reason: "duplicate" };
@@ -193,12 +233,19 @@ export function resolveDashboardCardScheduleDraft(
     return { status: "incomplete" };
   }
 
+  const schedule = {
+    weekdays: draft.weekdays,
+    startMinutes: draft.startMinutes,
+    endMinutes: draft.endMinutes,
+  };
+  const validationError = validateDashboardCardSchedule(schedule);
+
+  if (validationError) {
+    return { status: "invalid", reason: validationError };
+  }
+
   return {
     status: "complete",
-    schedule: {
-      weekdays: draft.weekdays,
-      startMinutes: draft.startMinutes,
-      endMinutes: draft.endMinutes,
-    },
+    schedule,
   };
 }

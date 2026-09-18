@@ -145,6 +145,9 @@ describe("dashboard add panel schedule fields", () => {
     ).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
     expect(host.querySelector('input[aria-label="Start time"]')).not.toBeNull();
     expect(host.querySelector('input[aria-label="End time"]')).not.toBeNull();
+    expect(host.textContent).toContain(
+      "Choose at least one day and a time range ending later that day or at midnight. All schedule fields are required.",
+    );
   });
 
   it("passes the chosen weekdays in order", () => {
