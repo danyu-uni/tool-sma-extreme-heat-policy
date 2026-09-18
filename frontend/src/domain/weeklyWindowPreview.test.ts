@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BatchHeatRiskLocationResult } from "@/api/heatRiskBatch";
+import type { DashboardForecastSnapshot } from "@/domain/dashboardForecast";
 import { resolveWeeklyWindowPreview } from "@/domain/weeklyWindowPreview";
 import type { Weekday } from "@/domain/weeklyWindow";
 
@@ -11,15 +11,12 @@ const draft = {
 const now = new Date("2026-09-15T00:00:00Z");
 function location(
   timezone: string | null = "Australia/Sydney",
-): BatchHeatRiskLocationResult {
+): DashboardForecastSnapshot {
   return {
     sport: "SOCCER",
     latitude: -33.86,
     longitude: 151.21,
-    timezone,
-    status: "ok",
-    error_code: null,
-    detail: null,
+    timezone: timezone ?? "",
     forecast: [8, 9, 10].map((hour) => ({
       time_utc: `2026-09-15T${String(hour).padStart(2, "0")}:00:00Z`,
       time_local: `2026-09-15T${hour + 10}:00:00+10:00`,
@@ -72,11 +69,11 @@ describe("weekly preview integration", () => {
       ).toEqual({ status: "invalid_time_zone" });
     },
   );
-  it("reports per-location failure even if a forecast happens to be present", () => {
+  it("reports unavailable when the forecast is empty", () => {
     expect(
       resolveWeeklyWindowPreview(
         draft,
-        { status: "ok", result: { ...location(), status: "error" } },
+        { status: "ok", result: { ...location(), forecast: [] } },
         now,
       ),
     ).toEqual({ status: "unavailable" });
@@ -113,7 +110,7 @@ describe("weekly preview integration", () => {
   });
   it("rejects invalid scores without mapping them to low risk", () => {
     const result = location();
-    result.forecast![1].heat_risk.risk_level_interpolated = NaN;
+    result.forecast[1].heat_risk.risk_level_interpolated = NaN;
     expect(
       resolveWeeklyWindowPreview(draft, { status: "ok", result }, now),
     ).toEqual({ status: "invalid_forecast" });

@@ -317,7 +317,8 @@
   },
   "dashboard": {
     "notifications": {
-      "riskUpdated": "Risk updated"
+      "riskUpdated": "Risk updated",
+      "refreshFailed": "Could not refresh dashboard risk data. Please try again."
     },
     "header": {
       "title": "My dashboard",

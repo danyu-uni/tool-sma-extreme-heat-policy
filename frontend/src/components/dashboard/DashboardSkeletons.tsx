@@ -2,7 +2,7 @@ import { Group, Paper, Skeleton, Stack } from "@mantine/core";
 import { CONTENT_PADDING } from "@/config/uiLayout";
 
 /**
- * Renders a skeleton placeholder while a dashboard card's batch risk data loads.
+ * Renders a skeleton placeholder while a dashboard card's risk data loads.
  */
 export function DashboardCardSkeleton() {
   return (

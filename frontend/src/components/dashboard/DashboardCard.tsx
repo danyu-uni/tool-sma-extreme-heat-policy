@@ -14,11 +14,11 @@ import {
   buildDashboardHomePath,
   type SavedDashboardCard,
 } from "@/domain/dashboard";
+import { type DashboardCardState } from "@/domain/dashboardCardState";
 import {
-  toDashboardBatchErrorI18nKey,
-  toDashboardCardErrorI18nKey,
-  type DashboardCardState,
-} from "@/domain/dashboardBatch";
+  toDashboardFetchErrorI18nKey,
+  toDashboardLocationErrorI18nKey,
+} from "@/domain/dashboardErrorMap";
 import type { DashboardViewMode } from "@/domain/dashboardViewMode";
 import { sports } from "@/domain/sport";
 import { toIntlLocale } from "@/i18n/language";
@@ -47,10 +47,13 @@ function DashboardCardStatusMessage({
 }) {
   const { t } = useTranslation();
 
-  if (cardState.status === "batch_error") {
+  if (cardState.status === "fetch_error") {
     return (
       <Text c="dimmed" fz="sm">
-        {t(toDashboardBatchErrorI18nKey(cardState.reason))}
+        {t(
+          toDashboardFetchErrorI18nKey(cardState.reason) ??
+            "dashboard.cardErrors.generic",
+        )}
       </Text>
     );
   }
@@ -58,7 +61,7 @@ function DashboardCardStatusMessage({
   if (cardState.status === "location_error") {
     return (
       <Text c="dimmed" fz="sm">
-        {t(toDashboardCardErrorI18nKey(cardState.errorCode))}
+        {t(toDashboardLocationErrorI18nKey(cardState.errorCode))}
       </Text>
     );
   }

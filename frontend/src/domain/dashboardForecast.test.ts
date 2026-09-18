@@ -4,6 +4,7 @@ import {
   deriveDashboardRiskLevels,
   getCurrentRiskFromForecast,
   getTodayMaxRiskFromForecast,
+  toDashboardForecastSnapshot,
 } from "@/domain/dashboardForecast";
 
 const BASE_POINT: Omit<ForecastApiPoint, "time_utc" | "time_local"> = {
@@ -66,6 +67,29 @@ describe("dashboardForecast", () => {
     expect(deriveDashboardRiskLevels(FORECAST)).toEqual({
       currentRiskLevelInterpolated: 1.2,
       todayMaxRiskLevelInterpolated: 2.4,
+    });
+  });
+
+  it("builds a dashboard forecast snapshot from a heat-risk response", () => {
+    expect(
+      toDashboardForecastSnapshot({
+        request: {
+          sport: "SOCCER",
+          profile: "ADULT",
+          location: {
+            latitude: -33.86,
+            longitude: 151.21,
+            timezone: "Australia/Sydney",
+          },
+        },
+        forecast: FORECAST,
+      }),
+    ).toEqual({
+      sport: "SOCCER",
+      latitude: -33.86,
+      longitude: 151.21,
+      timezone: "Australia/Sydney",
+      forecast: FORECAST,
     });
   });
 });

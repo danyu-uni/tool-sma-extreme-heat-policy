@@ -6,7 +6,7 @@ import type {
   DashboardCardSchedule,
   SavedDashboardCard,
 } from "@/domain/dashboard";
-import type { DashboardCardState } from "@/domain/dashboardBatch";
+import type { DashboardCardState } from "@/domain/dashboardCardState";
 import { sydneyCard as baseSydneyCard } from "@/test/weeklyWindowFixtures";
 import { createDashboardComponentHost } from "@/test/dashboardComponentHarness";
 
@@ -93,9 +93,9 @@ describe("DashboardCard", () => {
     );
   });
 
-  it("shows batch errors instead of metrics placeholders", () => {
+  it("shows fetch errors instead of metrics placeholders", () => {
     renderCard(sydneyCard, "my_schedule", {
-      status: "batch_error",
+      status: "fetch_error",
       reason: "network",
     });
 

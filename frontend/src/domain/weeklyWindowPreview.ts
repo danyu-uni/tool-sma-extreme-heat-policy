@@ -1,4 +1,4 @@
-import type { BatchHeatRiskLocationResult } from "@/api/heatRiskBatch";
+import type { DashboardForecastSnapshot } from "@/domain/dashboardForecast";
 import type { ForecastApiPoint } from "@/api/heatRisk";
 import {
   getNextWeeklyWindow,
@@ -9,7 +9,7 @@ import { selectWeeklyWindowForecast } from "@/domain/weeklyWindowForecast";
 
 export type WeeklyPreviewSource =
   | { status: "loading" | "unavailable" }
-  | { status: "ok"; result: BatchHeatRiskLocationResult };
+  | { status: "ok"; result: DashboardForecastSnapshot };
 
 export type WeeklyPreviewResult =
   | { status: "ok"; window: ScheduledWindow; points: ForecastApiPoint[] }
@@ -31,8 +31,7 @@ export function resolveWeeklyWindowPreview(
 ): WeeklyPreviewResult {
   if (source.status !== "ok") return { status: source.status };
   const { result } = source;
-  if (result.status !== "ok" || !result.forecast)
-    return { status: "unavailable" };
+  if (result.forecast.length === 0) return { status: "unavailable" };
   if (!result.timezone) return { status: "invalid_time_zone" };
   const next = getNextWeeklyWindow(
     { ...draft, timeZone: result.timezone },

@@ -60,12 +60,15 @@ Notes:
 
 - Route: `/dashboard`.
 - Users can save up to **10** location/sport cards. The frontend cap is
-  `MAX_DASHBOARD_CARDS` in `src/domain/dashboard.ts`; the backend batch
-  endpoint mirrors this with `BATCH_RISK_LOCATION_MAX` in
-  `backend/src/sma_extreme_heat_backend/schemas/batch.py`.
+  `MAX_DASHBOARD_CARDS` in `src/domain/dashboard.ts`.
 - Saved cards persist in `localStorage` via `src/pages/dashboard/browserState.ts`.
-- Card metrics load through `POST /home/risk/batch` using the same forecast
-  pipeline as Home.
+- Card metrics load through one `POST /home/risk` request per **unique**
+  saved location/sport pair using the same forecast pipeline as Home. React Query
+  keys use normalized coordinates (not card id) so duplicate locations share one
+  request. The backend in-memory cache also dedupes by sport, profile, and
+  coordinates within a single server process.
+- Dashboard heat-risk requests always use `DEFAULT_HEAT_RISK_PROFILE` (`ADULT`).
+  Home profile selection does not apply on `/dashboard`.
 - **Now** mode shows the stacked risk bar plus today's max on each card.
   **My schedule** and **Other time period** are UI placeholders until schedule
   and timeframe calculations are connected; the selected mode is kept in memory
@@ -76,7 +79,7 @@ Notes:
 With the backend and Vite development server running, open
 `/dashboard?weeklyPreview=1`. Add a dashboard location/sport card first, then
 select its weekday and start/end hours in **Weekly window preview**. The panel
-reuses that card's batch forecast and the API-provided location timezone. It
+reuses that card's forecast and the API-provided location timezone. It
 does not create additional API requests or save schedule selections.
 
 This opt-in panel is for team review: ordinary `/dashboard` and production

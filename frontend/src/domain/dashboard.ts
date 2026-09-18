@@ -45,9 +45,9 @@ export function toCoordinateKey(latitude: number, longitude: number): string {
 }
 
 /**
- * Builds a stable batch lookup key from sport and normalized coordinates.
+ * Builds a stable lookup key from sport and normalized coordinates.
  */
-export function toBatchResultKey(
+export function toDashboardCardKey(
   sport: SportType,
   latitude: number,
   longitude: number,
@@ -85,7 +85,7 @@ export function isDuplicateSavedDashboardCard(
     "sport" | "latitude" | "longitude" | "mapboxId"
   >,
 ): boolean {
-  const candidateKey = toBatchResultKey(
+  const candidateKey = toDashboardCardKey(
     candidate.sport,
     candidate.latitude,
     candidate.longitude,
@@ -105,7 +105,7 @@ export function isDuplicateSavedDashboardCard(
     }
 
     return (
-      toBatchResultKey(card.sport, card.latitude, card.longitude) ===
+      toDashboardCardKey(card.sport, card.latitude, card.longitude) ===
       candidateKey
     );
   });

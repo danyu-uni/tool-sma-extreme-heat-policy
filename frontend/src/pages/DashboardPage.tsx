@@ -19,6 +19,7 @@ import { MAX_DASHBOARD_CARDS } from "@/domain/dashboard";
 import type { DashboardLocationAddErrorReason } from "@/hooks/useDashboardLocationAdd";
 import { useDashboardHeatRisk } from "@/hooks/useDashboardHeatRisk";
 import {
+  createDashboardRefreshFailedToast,
   createDashboardRiskUpdatedToast,
   type DashboardToastEvent,
 } from "@/pages/dashboard/dashboardToast";
@@ -71,7 +72,7 @@ export function DashboardPage() {
   const runScheduledRefresh = useEffectEvent(async () => heatRisk.refresh());
 
   useEffect(() => {
-    if (!(cards.length > 0 && heatRisk.hasLoadedBatch)) {
+    if (!(cards.length > 0 && heatRisk.hasLoadedCardData)) {
       return;
     }
 
@@ -80,14 +81,16 @@ export function DashboardPage() {
 
     const scheduleNextRefresh = () => {
       timeoutId = window.setTimeout(async () => {
-        const didRefresh = await runScheduledRefresh();
+        const refreshResult = await runScheduledRefresh();
 
         if (isCancelled) {
           return;
         }
 
-        if (didRefresh) {
+        if (refreshResult.hasAnySuccess) {
           publishToast(createDashboardRiskUpdatedToast);
+        } else if (refreshResult.hasAnyFailure) {
+          publishToast(createDashboardRefreshFailedToast);
         }
 
         scheduleNextRefresh();
@@ -103,7 +106,7 @@ export function DashboardPage() {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [cards.length, heatRisk.hasLoadedBatch, publishToast]);
+  }, [cards.length, heatRisk.hasLoadedCardData, publishToast]);
 
   return (
     <>

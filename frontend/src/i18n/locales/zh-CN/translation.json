@@ -317,7 +317,8 @@
   },
   "dashboard": {
     "notifications": {
-      "riskUpdated": "风险已更新"
+      "riskUpdated": "风险已更新",
+      "refreshFailed": "无法刷新仪表盘风险数据，请重试。"
     },
     "header": {
       "title": "我的仪表盘",

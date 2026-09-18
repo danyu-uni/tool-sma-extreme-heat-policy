@@ -2,7 +2,7 @@ import { SimpleGrid, Stack } from "@mantine/core";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { CONTENT_GAP } from "@/config/uiLayout";
 import type { SavedDashboardCard } from "@/domain/dashboard";
-import type { DashboardCardState } from "@/domain/dashboardBatch";
+import type { DashboardCardState } from "@/domain/dashboardCardState";
 import type { DashboardViewMode } from "@/domain/dashboardViewMode";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { useDashboardStore } from "@/store/dashboardStore";
