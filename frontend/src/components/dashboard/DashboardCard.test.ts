@@ -119,7 +119,9 @@ describe("dashboard card schedule", () => {
       schedule: { weekdays: [6], startMinutes: 1260, endMinutes: 1440 },
     });
 
-    expect(harness.host.textContent).toContain("Sat · 9:00 pm – 12:00 am (next day)");
+    expect(harness.host.textContent).toContain(
+      "Sat · 9:00 pm – 12:00 am (next day)",
+    );
   });
 
   it("translates the schedule when the language changes", () => {
@@ -135,7 +137,6 @@ describe("dashboard card schedule", () => {
   it("shows no schedule line for a card saved without one", () => {
     renderCard(sydneyCard);
 
-    expect(harness.host.textContent).toContain("New South Wales, Australia");
     expect(harness.host.textContent).not.toMatch(/\d:\d{2}\s*(am|pm)\s*–/i);
   });
 });

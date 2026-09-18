@@ -69,14 +69,6 @@ export function buildDashboardHomePath(
   return `/?${searchParams.toString()}`;
 }
 
-export function formatSavedDashboardCardSubtitle(
-  card: Pick<SavedDashboardCard, "name" | "regionName" | "countryName">,
-): string {
-  return [card.regionName, card.countryName]
-    .filter((part): part is string => Boolean(part?.trim()))
-    .join(", ");
-}
-
 export function canAddDashboardCard(
   cards: readonly SavedDashboardCard[],
 ): boolean {

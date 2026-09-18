@@ -12,7 +12,6 @@ import { DashboardCardSkeleton } from "@/components/dashboard/DashboardSkeletons
 import { RiskStackedBar } from "@/components/dashboard/RiskStackedBar";
 import {
   buildDashboardHomePath,
-  formatSavedDashboardCardSubtitle,
   type SavedDashboardCard,
 } from "@/domain/dashboard";
 import {
@@ -121,8 +120,6 @@ function DashboardCardMetricsContent({
 function DashboardCardHeader({
   homePath,
   title,
-  locationSubtitle,
-  shouldShowLocationSubtitle,
   scheduleLabel,
   openHomeAriaLabel,
   lineClamp,
@@ -130,8 +127,6 @@ function DashboardCardHeader({
 }: {
   homePath: string;
   title: string;
-  locationSubtitle: string;
-  shouldShowLocationSubtitle: boolean;
   scheduleLabel: string | null;
   openHomeAriaLabel: string;
   lineClamp: number;
@@ -150,11 +145,6 @@ function DashboardCardHeader({
         </Box>
         {actions}
       </Group>
-      {shouldShowLocationSubtitle ? (
-        <Text c="dimmed" fz="sm" lineClamp={lineClamp}>
-          {locationSubtitle}
-        </Text>
-      ) : null}
       {scheduleLabel ? (
         <Text c="dimmed" fz="sm" lineClamp={lineClamp}>
           {scheduleLabel}
@@ -234,9 +224,6 @@ export function DashboardCard({
     sport: sportLabel,
     location: card.name,
   });
-  const locationSubtitle = formatSavedDashboardCardSubtitle(card);
-  const shouldShowLocationSubtitle =
-    locationSubtitle.length > 0 && locationSubtitle !== card.name;
   const scheduleLabel = card.schedule
     ? formatDashboardCardSchedule(
         card.schedule,
@@ -277,8 +264,6 @@ export function DashboardCard({
           <DashboardCardHeader
             homePath={homePath}
             title={cardTitle}
-            locationSubtitle={locationSubtitle}
-            shouldShowLocationSubtitle={shouldShowLocationSubtitle}
             scheduleLabel={scheduleLabel}
             openHomeAriaLabel={openHomeAriaLabel}
             lineClamp={2}
