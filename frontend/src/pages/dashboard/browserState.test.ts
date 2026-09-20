@@ -3,13 +3,20 @@ import {
   MAX_DASHBOARD_CARDS,
   type SavedDashboardCard,
 } from "@/domain/dashboard";
+import {
+  DASHBOARD_VIEW_MODES,
+  DEFAULT_DASHBOARD_VIEW_MODE,
+} from "@/domain/dashboardViewMode";
 import { SportType, SPORT_TYPE_VALUES } from "@/domain/sport";
 import {
   loadPersistedDashboardState,
+  loadPersistedDashboardViewMode,
   savePersistedDashboardState,
+  savePersistedDashboardViewMode,
 } from "@/pages/dashboard/browserState";
 
 const DASHBOARD_STORAGE_KEY = "dashboard-cards:v1";
+const DASHBOARD_VIEW_MODE_STORAGE_KEY = "dashboard-view-mode:v1";
 
 const SYDNEY_CARD: SavedDashboardCard = {
   id: "card-sydney",
@@ -167,5 +174,41 @@ describe("dashboard browserState", () => {
     expect(loadPersistedDashboardState(SPORT_TYPE_VALUES)?.cards).toHaveLength(
       MAX_DASHBOARD_CARDS,
     );
+  });
+});
+
+describe("dashboard view mode storage", () => {
+  let storage: Map<string, string>;
+
+  beforeEach(() => {
+    storage = installWindowMock();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it.each(DASHBOARD_VIEW_MODES)("loads the saved %s mode", (viewMode) => {
+    savePersistedDashboardViewMode(viewMode);
+
+    expect(loadPersistedDashboardViewMode()).toBe(viewMode);
+  });
+
+  it("falls back to the default mode when nothing has been saved", () => {
+    expect(loadPersistedDashboardViewMode()).toBe(DEFAULT_DASHBOARD_VIEW_MODE);
+  });
+
+  it("falls back to the default mode when the saved value is unknown", () => {
+    storage.set(DASHBOARD_VIEW_MODE_STORAGE_KEY, "yesterday");
+
+    expect(loadPersistedDashboardViewMode()).toBe(DEFAULT_DASHBOARD_VIEW_MODE);
+  });
+
+  it("replaces a previously saved mode", () => {
+    savePersistedDashboardViewMode("my_schedule");
+    savePersistedDashboardViewMode("other_time_period");
+
+    expect(loadPersistedDashboardViewMode()).toBe("other_time_period");
   });
 });

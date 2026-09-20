@@ -4,10 +4,16 @@ import {
   type SavedDashboardCard,
   validateDashboardCardSchedule,
 } from "@/domain/dashboard";
+import {
+  DEFAULT_DASHBOARD_VIEW_MODE,
+  parseDashboardViewMode,
+  type DashboardViewMode,
+} from "@/domain/dashboardViewMode";
 import { DEFAULT_SPORT_TYPE, type SportType } from "@/domain/sport";
 import { isValidPersistedSport } from "@/pages/home/browserState";
 
 const DASHBOARD_STORAGE_KEY = "dashboard-cards:v1";
+const DASHBOARD_VIEW_MODE_STORAGE_KEY = "dashboard-view-mode:v1";
 
 export interface PersistedDashboardState {
   cards: SavedDashboardCard[];
@@ -147,4 +153,41 @@ export function resolveInitialDashboardDraftSport(
   persistedState: PersistedDashboardState | null,
 ): SportType {
   return persistedState?.cards[0]?.sport ?? DEFAULT_SPORT_TYPE;
+}
+
+/**
+ * Loads the persisted dashboard view mode, falling back to the default.
+ */
+export function loadPersistedDashboardViewMode(): DashboardViewMode {
+  if (typeof window === "undefined") {
+    return DEFAULT_DASHBOARD_VIEW_MODE;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DASHBOARD_VIEW_MODE_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_DASHBOARD_VIEW_MODE;
+    }
+
+    return parseDashboardViewMode(raw) ?? DEFAULT_DASHBOARD_VIEW_MODE;
+  } catch {
+    return DEFAULT_DASHBOARD_VIEW_MODE;
+  }
+}
+
+/**
+ * Persists the selected dashboard view mode into localStorage (best-effort).
+ */
+export function savePersistedDashboardViewMode(
+  viewMode: DashboardViewMode,
+): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(DASHBOARD_VIEW_MODE_STORAGE_KEY, viewMode);
+  } catch {
+    // Intentionally ignore storage errors to keep UI interaction unblocked.
+  }
 }
