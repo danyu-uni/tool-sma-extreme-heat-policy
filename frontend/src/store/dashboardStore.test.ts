@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type DashboardCardSchedule,
   isDuplicateSavedDashboardCard,
@@ -7,6 +7,10 @@ import {
 import type { LocationSuggestion } from "@/domain/location";
 import { SportType } from "@/domain/sport";
 import { DEFAULT_DASHBOARD_VIEW_MODE } from "@/domain/dashboardViewMode";
+import {
+  loadPersistedDashboardViewMode,
+  savePersistedDashboardViewMode,
+} from "@/pages/dashboard/browserState";
 import { useDashboardStore } from "@/store/dashboardStore";
 
 const SYDNEY_LOCATION: LocationSuggestion = {
@@ -43,6 +47,27 @@ const MONDAY_MORNING: DashboardCardSchedule = {
   endMinutes: 660,
 };
 
+const DASHBOARD_VIEW_MODE_STORAGE_KEY = "dashboard-view-mode:v1";
+
+function installWindowMock(): Map<string, string> {
+  const storage = new Map<string, string>();
+
+  vi.stubGlobal("window", {
+    localStorage: {
+      clear: () => storage.clear(),
+      getItem: (key: string) => storage.get(key) ?? null,
+      removeItem: (key: string) => {
+        storage.delete(key);
+      },
+      setItem: (key: string, value: string) => {
+        storage.set(key, value);
+      },
+    },
+  });
+
+  return storage;
+}
+
 function resetDashboardStore() {
   useDashboardStore.setState({
     isBootstrapped: false,
@@ -56,12 +81,16 @@ function resetDashboardStore() {
 }
 
 describe("dashboardStore", () => {
+  let storage: Map<string, string>;
+
   beforeEach(() => {
+    storage = installWindowMock();
     resetDashboardStore();
   });
 
   afterEach(() => {
     resetDashboardStore();
+    vi.unstubAllGlobals();
   });
 
   it("bootstraps with persisted cards", () => {
@@ -89,6 +118,28 @@ describe("dashboardStore", () => {
         }),
       ],
     });
+  });
+
+  it("bootstraps with the saved view mode instead of the default", () => {
+    savePersistedDashboardViewMode("my_schedule");
+
+    useDashboardStore.getState().bootstrap({
+      cards: [],
+    });
+
+    expect(useDashboardStore.getState().viewMode).toBe("my_schedule");
+    expect(loadPersistedDashboardViewMode()).toBe("my_schedule");
+  });
+
+  it("bootstraps with an explicit view mode when provided", () => {
+    savePersistedDashboardViewMode("my_schedule");
+
+    useDashboardStore.getState().bootstrap({
+      cards: [],
+      viewMode: "other_time_period",
+    });
+
+    expect(useDashboardStore.getState().viewMode).toBe("other_time_period");
   });
 
   it("adds, reorders, and removes saved cards", () => {
@@ -155,9 +206,12 @@ describe("dashboardStore", () => {
     expect(useDashboardStore.getState().cards).toHaveLength(2);
   });
 
-  it("updates dashboard view mode", () => {
+  it("updates dashboard view mode and persists the selection", () => {
     useDashboardStore.getState().setViewMode("my_schedule");
+
     expect(useDashboardStore.getState().viewMode).toBe("my_schedule");
+    expect(storage.get(DASHBOARD_VIEW_MODE_STORAGE_KEY)).toBe("my_schedule");
+    expect(loadPersistedDashboardViewMode()).toBe("my_schedule");
   });
 
   it("rejects duplicate cards for the same sport and location", () => {

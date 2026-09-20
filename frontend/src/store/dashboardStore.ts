@@ -12,10 +12,15 @@ import {
   DEFAULT_DASHBOARD_VIEW_MODE,
   type DashboardViewMode,
 } from "@/domain/dashboardViewMode";
+import {
+  loadPersistedDashboardViewMode,
+  savePersistedDashboardViewMode,
+} from "@/pages/dashboard/browserState";
 
 export interface DashboardStoreBootstrapPayload {
   cards: SavedDashboardCard[];
   draftSport?: SportType;
+  viewMode?: DashboardViewMode;
 }
 
 interface DashboardStoreState {
@@ -87,7 +92,7 @@ export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
   locationSearchInput: "",
   locationSessionToken: createSessionToken(),
 
-  bootstrap: ({ cards, draftSport }) => {
+  bootstrap: ({ cards, draftSport, viewMode }) => {
     set({
       isBootstrapped: true,
       cards,
@@ -95,11 +100,13 @@ export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
       draftLocation: null,
       locationSearchInput: "",
       locationSessionToken: createSessionToken(),
+      viewMode: viewMode ?? loadPersistedDashboardViewMode(),
     });
   },
 
   setViewMode: (viewMode) => {
     set({ viewMode });
+    savePersistedDashboardViewMode(viewMode);
   },
 
   setDraftSport: (sport) => {
