@@ -61,7 +61,7 @@ export function DashboardCardTodayLine({
 
   return (
     <MetricSecondaryLine>
-      {t("home.sections.forecast.maxRiskLabel")}{" "}
+      {t("dashboard.cards.metrics.maxRiskToday")}{" "}
       <MetricSecondarySpan>{score.toFixed(1)} </MetricSecondarySpan>
       <MetricSecondarySpan color={getRiskColor(level)} fw={600}>
         {t(getRiskLevelI18nKeys(level).levelKey).toUpperCase()}

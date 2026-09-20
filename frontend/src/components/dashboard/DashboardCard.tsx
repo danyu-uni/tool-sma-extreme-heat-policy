@@ -24,7 +24,10 @@ import {
 import type { DashboardViewMode } from "@/domain/dashboardViewMode";
 import { sports } from "@/domain/sport";
 import { toIntlLocale } from "@/i18n/language";
-import { formatDashboardCardSchedule } from "@/lib/scheduleFormat";
+import {
+  formatDashboardCardSchedule,
+  formatScheduledWindowLocalDate,
+} from "@/lib/scheduleFormat";
 import { CONTENT_PADDING } from "@/config/uiLayout";
 import {
   DASHBOARD_CARD_CONTROL_LAYER_Z_INDEX,
@@ -80,10 +83,12 @@ function DashboardCardMetricsContent({
   cardState,
   scheduledCardState,
   viewMode,
+  intlLocale,
 }: {
   cardState: DashboardCardState;
   scheduledCardState: DashboardScheduledCardState | null;
   viewMode: DashboardViewMode;
+  intlLocale: string;
 }) {
   const { t } = useTranslation();
 
@@ -141,6 +146,14 @@ function DashboardCardMetricsContent({
 
     return (
       <Stack gap={4}>
+        <Text c="dimmed" fz="sm" fw={600}>
+          {t("dashboard.cards.nextSessionHeading", {
+            date: formatScheduledWindowLocalDate(
+              scheduledCardState.window,
+              intlLocale,
+            ),
+          })}
+        </Text>
         <DashboardMetricColumnLabel>
           {t("dashboard.cards.metrics.average")}
         </DashboardMetricColumnLabel>
@@ -275,13 +288,13 @@ export function DashboardCard({
     sport: sportLabel,
     location: card.name,
   });
-  const scheduleLabel = card.schedule
-    ? formatDashboardCardSchedule(
-        card.schedule,
-        toIntlLocale(i18n.resolvedLanguage),
-        (time) => t("dashboard.cards.nextDayTime", { time }),
-      )
-    : null;
+  const intlLocale = toIntlLocale(i18n.resolvedLanguage);
+  const scheduleLabel =
+    viewMode !== "now" && card.schedule
+      ? formatDashboardCardSchedule(card.schedule, intlLocale, (time) =>
+          t("dashboard.cards.nextDayTime", { time }),
+        )
+      : null;
   const homePath = buildDashboardHomePath(card.sport, card.displayLabel);
   const openHomeAriaLabel = t("dashboard.cards.openHomeAriaLabel", {
     title: cardTitle,
@@ -327,6 +340,7 @@ export function DashboardCard({
             cardState={cardState}
             scheduledCardState={scheduledCardState}
             viewMode={viewMode}
+            intlLocale={intlLocale}
           />
         </Stack>
         <DashboardCardHomeOverlay homePath={homePath} />

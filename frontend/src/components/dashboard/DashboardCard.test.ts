@@ -94,18 +94,28 @@ describe("DashboardCard", () => {
     expect(
       harness.host.querySelector('[aria-label="Risk score 1.4, Low"]'),
     ).not.toBeNull();
-    expect(harness.host.textContent).toContain("Max risk:");
+    expect(harness.host.textContent).toContain("Max risk (today):");
   });
 
   it("renders average and explicit Min/Max metrics in My schedule mode", () => {
     renderCard(sydneyCard, "my_schedule");
 
+    expect(harness.host.textContent).toContain("Next session ·");
+    expect(harness.host.textContent).toContain("Sep");
     expect(harness.host.textContent).toContain("Average");
+    expect(harness.host.textContent).not.toContain("Average (next session on");
     expect(
       harness.host.querySelector('[aria-label="Risk score 1.6, Low"]'),
     ).not.toBeNull();
     expect(harness.host.textContent).toContain("Min: 0.9 LOW");
     expect(harness.host.textContent).toContain("Max: 2.3 MODERATE");
+  });
+
+  it("does not show a separate next session details line in My schedule mode", () => {
+    renderCard({ ...sydneyCard, schedule: eveningSchedule }, "my_schedule");
+
+    expect(harness.host.textContent).not.toContain("Next session details:");
+    expect(harness.host.textContent).toContain("Next session ·");
   });
 
   it("renders selected-period placeholder metrics for other time period mode", () => {
@@ -131,17 +141,28 @@ describe("DashboardCard", () => {
 });
 
 describe("dashboard card schedule", () => {
-  it("shows the weekdays and times of a saved schedule", () => {
-    renderCard({ ...sydneyCard, schedule: eveningSchedule });
+  it("hides the schedule line in Now mode", () => {
+    renderCard({ ...sydneyCard, schedule: eveningSchedule }, "now");
+
+    expect(harness.host.textContent).not.toContain(
+      "Tue, Thu · 6:00 pm – 8:00 pm",
+    );
+  });
+
+  it("shows the weekdays and times of a saved schedule in My schedule mode", () => {
+    renderCard({ ...sydneyCard, schedule: eveningSchedule }, "my_schedule");
 
     expect(harness.host.textContent).toContain("Tue, Thu · 6:00 pm – 8:00 pm");
   });
 
   it("marks an end time of midnight as the next day", () => {
-    renderCard({
-      ...sydneyCard,
-      schedule: { weekdays: [6], startMinutes: 1260, endMinutes: 1440 },
-    });
+    renderCard(
+      {
+        ...sydneyCard,
+        schedule: { weekdays: [6], startMinutes: 1260, endMinutes: 1440 },
+      },
+      "my_schedule",
+    );
 
     expect(harness.host.textContent).toContain(
       "Sat · 9:00 pm – 12:00 am (next day)",
@@ -149,7 +170,7 @@ describe("dashboard card schedule", () => {
   });
 
   it("translates the schedule when the language changes", () => {
-    renderCard({ ...sydneyCard, schedule: eveningSchedule });
+    renderCard({ ...sydneyCard, schedule: eveningSchedule }, "my_schedule");
 
     act(() => {
       void harness.i18n.changeLanguage("zh-CN");
