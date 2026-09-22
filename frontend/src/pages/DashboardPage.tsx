@@ -114,12 +114,6 @@ export function DashboardPage() {
     <>
       <Stack gap={SECTION_STACK_GAP}>
         <DashboardMainPanel onAddError={handleAddError} />
-        {import.meta.env.DEV && searchParams.get("weeklyPreview") === "1" ? (
-          <WeeklyWindowPreview
-            cards={cards}
-            getSource={heatRisk.getWeeklyPreviewSource}
-          />
-        ) : null}
         {cards.length > 0 ? (
           <Stack gap={SECTION_STACK_GAP}>
             <SectionCard title={t("dashboard.viewMode.label")}>
@@ -136,6 +130,12 @@ export function DashboardPage() {
               scheduleNow={scheduleNow}
             />
           </Stack>
+        ) : null}
+        {import.meta.env.DEV && searchParams.get("weeklyPreview") === "1" ? (
+          <WeeklyWindowPreview
+            cards={cards}
+            getSource={heatRisk.getWeeklyPreviewSource}
+          />
         ) : null}
       </Stack>
 

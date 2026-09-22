@@ -325,6 +325,8 @@
       "description": "选择地点、运动项目和练习日程以添加卡片。在下方切换仪表盘模式（当前、我的日程或其他时间段）以控制每张卡片显示的内容。当前模式显示各地点的实时风险。我的日程模式显示该卡片下一次日程时段的风险详情。最多可添加 {{maxCards}} 张卡片。"
     },
     "addLocation": {
+      "openFormButton": "添加卡片",
+      "modalTitle": "添加仪表盘卡片",
       "addButton": "添加到仪表盘",
       "weekdaysLabel": "每逢",
       "timeLabel": "时间",

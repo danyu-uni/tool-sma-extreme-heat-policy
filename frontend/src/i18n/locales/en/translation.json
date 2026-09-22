@@ -325,6 +325,8 @@
       "description": "Select a location, sport, and practice schedule to add a card. Switch dashboard mode between Now, My schedule, and Other time period to control what each card shows. Now shows live risk at each location. My schedule shows risk details for the next upcoming session on that card's saved schedule. You can add up to {{maxCards}} cards."
     },
     "addLocation": {
+      "openFormButton": "Add card",
+      "modalTitle": "Add a dashboard card",
       "addButton": "Add to dashboard",
       "weekdaysLabel": "Every",
       "timeLabel": "Time",

@@ -5,12 +5,13 @@ import {
   Group,
   InputBase,
   Loader,
+  Modal,
   Select,
   Stack,
   Text,
   useCombobox,
 } from "@mantine/core";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardScheduleFields } from "@/components/dashboard/DashboardScheduleFields";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -36,11 +37,12 @@ interface DashboardMainPanelProps {
 }
 
 /**
- * Renders the dashboard add panel with Home-style filters and an explicit add action.
+ * Renders the dashboard header, empty state, and modal add-card form.
  */
 export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
   const { t } = useTranslation();
   const locationCombobox = useCombobox();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const draftSport = useDashboardStore((state) => state.draftSport);
   const setDraftSport = useDashboardStore((state) => state.setDraftSport);
   const cards = useDashboardStore((state) => state.cards);
@@ -94,6 +96,12 @@ export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
     }
   }, [addErrorReason, onAddError]);
 
+  useEffect(() => {
+    if (!canAddMoreCards && isAddModalOpen) {
+      setIsAddModalOpen(false);
+    }
+  }, [canAddMoreCards, isAddModalOpen]);
+
   const closeLocationDropdown = () => {
     locationCombobox.closeDropdown();
     locationCombobox.resetSelectedOption();
@@ -105,126 +113,156 @@ export function DashboardMainPanel({ onAddError }: DashboardMainPanelProps) {
     }
   };
 
+  const handleAddCardClick = () => {
+    const cardCountBeforeAdd = useDashboardStore.getState().cards.length;
+    onAddCardClick();
+    const cardCountAfterAdd = useDashboardStore.getState().cards.length;
+
+    if (cardCountAfterAdd > cardCountBeforeAdd) {
+      setIsAddModalOpen(false);
+    }
+  };
+
   return (
-    <SectionCard
-      title={t("dashboard.header.title")}
-      subtitle={t("dashboard.header.description", {
-        maxCards: MAX_DASHBOARD_CARDS,
-      })}
-    >
-      <Stack gap={CONTENT_GAP}>
-        <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
-          <Text fw={600} w={FIELD_LABEL_WIDTH} ta="right">
-            {t("home.sections.filters.locationLabel")}:
-          </Text>
-          <Box flex={1}>
-            <Combobox
-              store={locationCombobox}
-              onOptionSubmit={(value) => {
-                onLocationOptionSubmit(value);
-                closeLocationDropdown();
-              }}
-              size="md"
-            >
-              <Combobox.Target targetType="input">
-                <InputBase
-                  __staticSelector="Select"
-                  aria-label={t("home.sections.filters.locationLabel")}
-                  size="md"
-                  placeholder={t("home.sections.filters.locationPlaceholder")}
-                  value={locationSearchInput}
-                  onChange={(event) => {
-                    onLocationSearchInputChange(event.currentTarget.value);
-                    if (!isShowingCommittedDraftLocation) {
-                      locationCombobox.openDropdown();
-                    }
-                  }}
-                  onFocus={() => {
-                    if (shouldRenderLocationDropdown) {
-                      locationCombobox.openDropdown();
-                    }
-                  }}
-                  onBlur={closeLocationDropdown}
-                  rightSection={locationRightSection}
-                  rightSectionPointerEvents="none"
-                  autoComplete="off"
-                  disabled={isAddFormDisabled}
-                />
-              </Combobox.Target>
-
-              {shouldRenderLocationDropdown ? (
-                <Combobox.Dropdown>
-                  <Combobox.Options>{locationOptions}</Combobox.Options>
-                </Combobox.Dropdown>
-              ) : null}
-            </Combobox>
-          </Box>
-        </Group>
-
-        <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
-          <Text fw={600} w={FIELD_LABEL_WIDTH} ta="right">
-            {t("home.sections.filters.sportLabel")}:
-          </Text>
-          <Box flex={1}>
-            <Select
-              aria-label={t("home.sections.filters.sportLabel")}
-              size="md"
-              data={sportOptions}
-              value={draftSport}
-              onChange={handleSportChange}
-              searchable
-              nothingFoundMessage={t("home.sections.filters.sportNotFound")}
-              disabled={isAddFormDisabled}
-            />
-          </Box>
-        </Group>
-
-        <DashboardScheduleFields
-          weekdays={draftWeekdays}
-          startMinutes={draftStartMinutes}
-          endMinutes={draftEndMinutes}
-          onWeekdaysChange={onDraftWeekdaysChange}
-          onStartMinutesChange={onDraftStartMinutesChange}
-          onEndMinutesChange={onDraftEndMinutesChange}
-          labelWidth={FIELD_LABEL_WIDTH}
-          disabled={isAddFormDisabled}
-        />
-
-        <Group wrap="nowrap" align="flex-start" gap={CONTENT_GAP}>
-          <Box w={FIELD_LABEL_WIDTH} visibleFrom="xs" />
-          <Text c="dimmed" fz="sm" flex={1}>
-            {t("dashboard.addLocation.scheduleRequired")}
-          </Text>
-        </Group>
-
-        <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
-          <Box w={FIELD_LABEL_WIDTH} visibleFrom="xs" />
+    <>
+      <SectionCard
+        title={t("dashboard.header.title")}
+        subtitle={t("dashboard.header.description", {
+          maxCards: MAX_DASHBOARD_CARDS,
+        })}
+      >
+        <Stack gap={CONTENT_GAP}>
           <Button
-            flex={1}
             size="md"
-            onClick={onAddCardClick}
-            disabled={!canSubmitAdd}
-            loading={isResolvingLocation}
+            onClick={() => setIsAddModalOpen(true)}
+            disabled={!canAddMoreCards}
           >
-            {t("dashboard.addLocation.addButton")}
+            {t("dashboard.addLocation.openFormButton")}
           </Button>
-        </Group>
 
-        {!canAddMoreCards ? (
-          <Text c="dimmed" fz="sm">
-            {t("dashboard.errors.max_reached", {
-              maxCards: MAX_DASHBOARD_CARDS,
-            })}
-          </Text>
-        ) : null}
+          {!canAddMoreCards ? (
+            <Text c="dimmed" fz="sm">
+              {t("dashboard.errors.max_reached", {
+                maxCards: MAX_DASHBOARD_CARDS,
+              })}
+            </Text>
+          ) : null}
 
-        {cards.length === 0 ? (
-          <Stack gap="xs">
-            <Text fw={600}>{t("dashboard.emptyState.title")}</Text>
-            <Text c="dimmed">{t("dashboard.emptyState.body")}</Text>
-          </Stack>
-        ) : null}
-      </Stack>
-    </SectionCard>
+          {cards.length === 0 ? (
+            <Stack gap="xs">
+              <Text fw={600}>{t("dashboard.emptyState.title")}</Text>
+              <Text c="dimmed">{t("dashboard.emptyState.body")}</Text>
+            </Stack>
+          ) : null}
+        </Stack>
+      </SectionCard>
+
+      <Modal
+        opened={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title={t("dashboard.addLocation.modalTitle")}
+        centered
+        size="lg"
+      >
+        <Stack gap={CONTENT_GAP}>
+          <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
+            <Text fw={600} w={FIELD_LABEL_WIDTH} ta="right">
+              {t("home.sections.filters.locationLabel")}:
+            </Text>
+            <Box flex={1}>
+              <Combobox
+                store={locationCombobox}
+                onOptionSubmit={(value) => {
+                  onLocationOptionSubmit(value);
+                  closeLocationDropdown();
+                }}
+                size="md"
+              >
+                <Combobox.Target targetType="input">
+                  <InputBase
+                    __staticSelector="Select"
+                    aria-label={t("home.sections.filters.locationLabel")}
+                    size="md"
+                    placeholder={t("home.sections.filters.locationPlaceholder")}
+                    value={locationSearchInput}
+                    onChange={(event) => {
+                      onLocationSearchInputChange(event.currentTarget.value);
+                      if (!isShowingCommittedDraftLocation) {
+                        locationCombobox.openDropdown();
+                      }
+                    }}
+                    onFocus={() => {
+                      if (shouldRenderLocationDropdown) {
+                        locationCombobox.openDropdown();
+                      }
+                    }}
+                    onBlur={closeLocationDropdown}
+                    rightSection={locationRightSection}
+                    rightSectionPointerEvents="none"
+                    autoComplete="off"
+                    disabled={isAddFormDisabled}
+                  />
+                </Combobox.Target>
+
+                {shouldRenderLocationDropdown ? (
+                  <Combobox.Dropdown>
+                    <Combobox.Options>{locationOptions}</Combobox.Options>
+                  </Combobox.Dropdown>
+                ) : null}
+              </Combobox>
+            </Box>
+          </Group>
+
+          <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
+            <Text fw={600} w={FIELD_LABEL_WIDTH} ta="right">
+              {t("home.sections.filters.sportLabel")}:
+            </Text>
+            <Box flex={1}>
+              <Select
+                aria-label={t("home.sections.filters.sportLabel")}
+                size="md"
+                data={sportOptions}
+                value={draftSport}
+                onChange={handleSportChange}
+                searchable
+                nothingFoundMessage={t("home.sections.filters.sportNotFound")}
+                disabled={isAddFormDisabled}
+              />
+            </Box>
+          </Group>
+
+          <DashboardScheduleFields
+            weekdays={draftWeekdays}
+            startMinutes={draftStartMinutes}
+            endMinutes={draftEndMinutes}
+            onWeekdaysChange={onDraftWeekdaysChange}
+            onStartMinutesChange={onDraftStartMinutesChange}
+            onEndMinutesChange={onDraftEndMinutesChange}
+            labelWidth={FIELD_LABEL_WIDTH}
+            disabled={isAddFormDisabled}
+          />
+
+          <Group wrap="nowrap" align="flex-start" gap={CONTENT_GAP}>
+            <Box w={FIELD_LABEL_WIDTH} visibleFrom="xs" />
+            <Text c="dimmed" fz="sm" flex={1}>
+              {t("dashboard.addLocation.scheduleRequired")}
+            </Text>
+          </Group>
+
+          <Group wrap="nowrap" align="center" gap={CONTENT_GAP}>
+            <Box w={FIELD_LABEL_WIDTH} visibleFrom="xs" />
+            <Button
+              flex={1}
+              size="md"
+              onClick={handleAddCardClick}
+              disabled={!canSubmitAdd}
+              loading={isResolvingLocation}
+            >
+              {t("dashboard.addLocation.addButton")}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </>
   );
 }

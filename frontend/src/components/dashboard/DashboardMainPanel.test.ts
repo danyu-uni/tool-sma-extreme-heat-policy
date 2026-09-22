@@ -109,8 +109,16 @@ function render() {
   );
 }
 
+function openAddModal() {
+  const openButton = Array.from(document.querySelectorAll("button")).find(
+    (button) => button.textContent === "Add card",
+  );
+  expect(openButton, "Missing Add card button").toBeDefined();
+  act(() => openButton!.click());
+}
+
 function weekdayCheckbox(label: string): HTMLInputElement {
-  const labelElement = Array.from(host.querySelectorAll("label")).find(
+  const labelElement = Array.from(document.querySelectorAll("label")).find(
     (item) => item.textContent === label,
   );
   expect(labelElement, `Missing weekday ${label}`).toBeDefined();
@@ -118,15 +126,31 @@ function weekdayCheckbox(label: string): HTMLInputElement {
 }
 
 describe("dashboard add panel schedule fields", () => {
-  it("shows the schedule fields with the required hint", () => {
+  it("keeps the add form inside a modal until opened", () => {
     render();
 
     expect(
-      host.querySelector('[role="group"][aria-label="Every"]'),
+      document.querySelector('[role="group"][aria-label="Every"]'),
+    ).toBeNull();
+    expect(
+      Array.from(document.querySelectorAll("button")).some(
+        (button) => button.textContent === "Add card",
+      ),
+    ).toBe(true);
+
+    openAddModal();
+
+    expect(
+      document.querySelector('[role="group"][aria-label="Every"]'),
     ).not.toBeNull();
-    expect(host.querySelector('input[aria-label="Start time"]')).not.toBeNull();
-    expect(host.querySelector('input[aria-label="End time"]')).not.toBeNull();
-    expect(host.textContent).toContain(
+    expect(
+      document.querySelector('input[aria-label="Start time"]'),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('input[aria-label="End time"]'),
+    ).not.toBeNull();
+    expect(document.body.textContent).toContain("Add a dashboard card");
+    expect(document.body.textContent).toContain(
       "Choose at least one day and a time range ending later that day or at midnight. All schedule fields are required.",
     );
   });
@@ -135,28 +159,38 @@ describe("dashboard add panel schedule fields", () => {
     const onDraftWeekdaysChange = vi.fn();
     setAddForm({ draftWeekdays: [4], onDraftWeekdaysChange });
     render();
+    openAddModal();
 
     act(() => weekdayCheckbox("Tue").click());
 
     expect(onDraftWeekdaysChange).toHaveBeenCalledWith([2, 4]);
   });
 
-  it("disables the schedule fields when no more cards can be added", () => {
+  it("disables the open button when no more cards can be added", () => {
     setAddForm({ canAddMoreCards: false });
     render();
 
-    expect(weekdayCheckbox("Mon").disabled).toBe(true);
+    const openButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent === "Add card",
+    );
+    expect(openButton?.disabled).toBe(true);
+  });
+
+  it("disables the schedule fields when no more cards can be added", () => {
+    setAddForm({ canAddMoreCards: false });
+    render();
+    // Modal stays closed when max reached; open path is blocked by the button.
     expect(
-      host.querySelector<HTMLInputElement>('input[aria-label="Start time"]')
-        ?.disabled,
-    ).toBe(true);
+      document.querySelector('[role="group"][aria-label="Every"]'),
+    ).toBeNull();
   });
 
   it("disables the add button while the schedule is incomplete", () => {
     setAddForm({ draftWeekdays: [2], canSubmitAdd: false });
     render();
+    openAddModal();
 
-    const addButton = Array.from(host.querySelectorAll("button")).find(
+    const addButton = Array.from(document.querySelectorAll("button")).find(
       (button) => button.textContent === "Add to dashboard",
     );
     expect(addButton?.disabled).toBe(true);
