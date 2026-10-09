@@ -76,7 +76,10 @@ describe("dashboard scheduled card state", () => {
         query(),
         new Date("2026-09-15T08:00:01Z"),
       ),
-    ).toEqual({ status: "incomplete_forecast" });
+    ).toMatchObject({
+      status: "incomplete_forecast",
+      window: { localDate: "2026-09-22" },
+    });
   });
 
   it("preserves fetch failures instead of calculating from stale data", () => {

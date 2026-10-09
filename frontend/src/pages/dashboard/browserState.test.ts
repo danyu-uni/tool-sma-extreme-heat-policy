@@ -177,6 +177,55 @@ describe("dashboard browserState", () => {
   });
 });
 
+describe("dashboard other period storage", () => {
+  beforeEach(() => {
+    installWindowMock();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("loads and saves the other-period draft", async () => {
+    const {
+      loadPersistedDashboardOtherPeriodDraft,
+      savePersistedDashboardOtherPeriodDraft,
+    } = await import("@/pages/dashboard/browserState");
+
+    savePersistedDashboardOtherPeriodDraft({
+      weekday: 2,
+      startMinutes: 540,
+      endMinutes: 660,
+    });
+
+    expect(loadPersistedDashboardOtherPeriodDraft()).toEqual({
+      weekday: 2,
+      startMinutes: 540,
+      endMinutes: 660,
+    });
+  });
+
+  it("falls back when a saved draft is not restorable", async () => {
+    const { createDefaultDashboardOtherPeriodDraft } =
+      await import("@/domain/dashboardOtherPeriod");
+    const {
+      loadPersistedDashboardOtherPeriodDraft,
+      savePersistedDashboardOtherPeriodDraft,
+    } = await import("@/pages/dashboard/browserState");
+
+    savePersistedDashboardOtherPeriodDraft({
+      weekday: 2,
+      startMinutes: 90,
+      endMinutes: 180,
+    });
+
+    expect(loadPersistedDashboardOtherPeriodDraft()).toEqual(
+      createDefaultDashboardOtherPeriodDraft(),
+    );
+  });
+});
+
 describe("dashboard view mode storage", () => {
   let storage: Map<string, string>;
 

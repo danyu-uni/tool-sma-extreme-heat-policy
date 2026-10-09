@@ -322,7 +322,7 @@
     },
     "header": {
       "title": "我的仪表盘",
-      "description": "选择地点、运动项目和练习日程以添加卡片。在下方切换仪表盘模式（当前、我的日程或其他时间段）以控制每张卡片显示的内容。当前模式显示各地点的实时风险。我的日程模式显示该卡片下一次日程时段的风险详情。最多可添加 {{maxCards}} 张卡片。"
+      "description": "选择地点、运动项目和练习日程以添加卡片。在下方切换仪表盘模式（当前、我的日程或其他时间段）以控制每张卡片显示的内容。当前模式显示各地点的实时风险。我的日程模式显示该卡片下一次日程时段的风险详情。其他时间段模式显示你所选星期和时间段下一次出现时的平均和最低/最高风险。最多可添加 {{maxCards}} 张卡片。"
     },
     "addLocation": {
       "openFormButton": "添加卡片",
@@ -350,6 +350,8 @@
       "moveDown": "下移",
       "nextDayTime": "{{time}}（次日）",
       "nextSessionHeading": "下一次日程 · {{date}}",
+      "selectedPeriodHeader": "所选 · {{date}} · {{times}}",
+      "selectedPeriodDateHeader": "所选 · {{date}}",
       "metrics": {
         "current": "当前",
         "maxRiskToday": "今日最高风险：",
@@ -367,7 +369,9 @@
       "riskCalculationFailed": "无法计算此地点的风险。",
       "missingSchedule": "此卡片没有已保存的日程。",
       "scheduleForecastUnavailable": "天气预报暂未覆盖下一次日程时段。",
-      "scheduleUnavailable": "无法计算下一次日程时段。"
+      "scheduleUnavailable": "无法计算下一次日程时段。",
+      "otherPeriodForecastUnavailable": "预报数据尚未覆盖该地点的所选时段。",
+      "otherPeriodUnavailable": "无法为该地点计算所选时段。"
     },
     "errors": {
       "missing_token": "Mapbox 未配置，地点搜索不可用。",
@@ -382,9 +386,9 @@
     },
     "viewMode": {
       "label": "仪表盘模式",
-      "otherTimePeriodPlaceholderHint": "“其他时间段”指标即将推出。",
-      "otherTimePeriodMetricLabel": "所选时段",
-      "otherTimePeriodCardPlaceholder": "连接所选时段后，这里将显示平均和风险范围指标。",
+      "otherPeriodDayLabel": "星期",
+      "otherPeriodTimeHint": "请选择星期几和时间段，以便在所有卡片上查看。",
+      "otherPeriodInvalidHint": "结束时间须晚于开始时间。不支持跨夜时段。",
       "options": {
         "now": "当前",
         "my_schedule": "我的日程",

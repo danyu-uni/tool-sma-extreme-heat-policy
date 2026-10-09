@@ -6,7 +6,12 @@ import {
 } from "@/domain/dashboardForecast";
 import type { RiskLevel } from "@/domain/risk";
 import { toRiskLevel } from "@/domain/risk";
-import type { WeeklyPreviewSource } from "@/domain/weeklyWindowPreview";
+import type { ScheduledWindow, WeeklyWindow } from "@/domain/weeklyWindow";
+import { summarizeWeeklyWindowRisk } from "@/domain/weeklyWindowForecast";
+import {
+  resolveWeeklyWindowPreview,
+  type WeeklyPreviewSource,
+} from "@/domain/weeklyWindowPreview";
 
 export type DashboardCardLocationErrorCode =
   | DashboardHeatRiskLocationErrorCode
@@ -41,6 +46,33 @@ export type DashboardCardState =
       todayMaxRiskScore: number;
       currentRiskLevel: RiskLevel;
       todayMaxRiskLevel: RiskLevel;
+    };
+
+type DashboardCardUnavailableState = Exclude<
+  DashboardCardState,
+  { status: "ok" }
+>;
+
+export type DashboardWeeklyWindowCardState =
+  | DashboardCardUnavailableState
+  | {
+      status:
+        | "unavailable"
+        | "invalid_time_zone"
+        | "invalid_window"
+        | "invalid_forecast";
+    }
+  | { status: "incomplete_forecast"; window: ScheduledWindow }
+  | { status: "unresolved_local_time"; localDate: string; timeZone: string }
+  | {
+      status: "ok";
+      window: ScheduledWindow;
+      averageRiskScore: number;
+      minRiskScore: number;
+      maxRiskScore: number;
+      averageRiskLevel: RiskLevel;
+      minRiskLevel: RiskLevel;
+      maxRiskLevel: RiskLevel;
     };
 
 /**
@@ -219,5 +251,58 @@ export function resolveWeeklyPreviewSourceFromQuery(
   return {
     status: "ok",
     result: toDashboardForecastSnapshot(query.data),
+  };
+}
+
+/**
+ * Resolves average/min/max risk for the next weekly window on a card forecast.
+ */
+export function resolveDashboardWeeklyWindowCardState(
+  query: DashboardCardQueryView | undefined,
+  weeklyWindow: Omit<WeeklyWindow, "timeZone">,
+  now: Date,
+  options?: { includeInProgress?: boolean },
+): DashboardWeeklyWindowCardState {
+  const cardState = resolveDashboardCardQueryState(query);
+
+  if (cardState.status !== "ok") {
+    return cardState;
+  }
+
+  const preview = resolveWeeklyWindowPreview(
+    weeklyWindow,
+    resolveWeeklyPreviewSourceFromQuery(query),
+    now,
+    options,
+  );
+
+  if (preview.status === "incomplete_forecast") {
+    return { status: "incomplete_forecast", window: preview.window };
+  }
+
+  if (preview.status === "unresolved_local_time") {
+    return {
+      status: "unresolved_local_time",
+      localDate: preview.localDate,
+      timeZone: preview.timeZone,
+    };
+  }
+
+  if (preview.status !== "ok") {
+    return { status: preview.status };
+  }
+
+  const summary = summarizeWeeklyWindowRisk(preview.points);
+  if (!summary) {
+    return { status: "invalid_forecast" };
+  }
+
+  return {
+    status: "ok",
+    window: preview.window,
+    ...summary,
+    averageRiskLevel: toRiskLevel(summary.averageRiskScore),
+    minRiskLevel: toRiskLevel(summary.minRiskScore),
+    maxRiskLevel: toRiskLevel(summary.maxRiskScore),
   };
 }

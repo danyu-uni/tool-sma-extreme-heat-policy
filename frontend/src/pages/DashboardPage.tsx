@@ -127,6 +127,7 @@ export function DashboardPage() {
               viewMode={viewMode}
               getCardState={heatRisk.getCardState}
               getScheduledCardState={heatRisk.getScheduledCardState}
+              getOtherPeriodCardState={heatRisk.getOtherPeriodCardState}
               scheduleNow={scheduleNow}
             />
           </Stack>

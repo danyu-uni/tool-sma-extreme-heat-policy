@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/apiErrors";
 import type { SavedDashboardCard } from "@/domain/dashboard";
+import type { DashboardOtherPeriodDraft } from "@/domain/dashboardOtherPeriod";
 import { resolveDashboardCardQueryState } from "@/domain/dashboardCardState";
 import { useDashboardHeatRisk } from "@/hooks/useDashboardHeatRisk";
 import {
@@ -12,6 +13,11 @@ import {
 
 const dashboardState = vi.hoisted(() => ({
   cards: [] as SavedDashboardCard[],
+  otherPeriodDraft: {
+    weekday: 2,
+    startMinutes: 1080,
+    endMinutes: 1200,
+  } as DashboardOtherPeriodDraft,
 }));
 
 const queries = vi.hoisted(() => ({
@@ -28,7 +34,10 @@ const queries = vi.hoisted(() => ({
 
 vi.mock("@/store/dashboardStore", () => ({
   useDashboardStore: (
-    selector: (state: { cards: SavedDashboardCard[] }) => unknown,
+    selector: (state: {
+      cards: SavedDashboardCard[];
+      otherPeriodDraft: DashboardOtherPeriodDraft;
+    }) => unknown,
   ) => selector(dashboardState),
 }));
 
@@ -39,6 +48,11 @@ vi.mock("@tanstack/react-query", () => ({
 
 beforeEach(() => {
   dashboardState.cards = [sydneyCard];
+  dashboardState.otherPeriodDraft = {
+    weekday: 2,
+    startMinutes: 1080,
+    endMinutes: 1200,
+  };
   queries.results = [
     {
       data: sydneyHeatRiskResponse(),
@@ -74,6 +88,16 @@ function readScheduledCardStatus(
 ): string {
   function Probe() {
     return useDashboardHeatRisk().getScheduledCardState(
+      card,
+      new Date("2026-09-15T00:00:00Z"),
+    ).status;
+  }
+  return renderToStaticMarkup(createElement(Probe));
+}
+
+function readOtherPeriodCardStatus(card = sydneyCard): string {
+  function Probe() {
+    return useDashboardHeatRisk().getOtherPeriodCardState(
       card,
       new Date("2026-09-15T00:00:00Z"),
     ).status;
@@ -214,6 +238,22 @@ describe("dashboard card query adapter", () => {
         locationErrorCode: null,
       }),
     ).toEqual({ status: "loading" });
+  });
+
+  it("keeps invalid other-period drafts distinct from incomplete ones", () => {
+    dashboardState.otherPeriodDraft = {
+      weekday: 2,
+      startMinutes: 1080,
+      endMinutes: 540,
+    };
+    expect(readOtherPeriodCardStatus()).toBe("invalid_selection");
+
+    dashboardState.otherPeriodDraft = {
+      weekday: 2,
+      startMinutes: 1080,
+      endMinutes: null,
+    };
+    expect(readOtherPeriodCardStatus()).toBe("missing_selection");
   });
 
   it("shows fetch_error instead of stale metrics after a failed refresh", () => {

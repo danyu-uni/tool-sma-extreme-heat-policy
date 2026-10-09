@@ -16,6 +16,7 @@ import {
   type SavedDashboardCard,
 } from "@/domain/dashboard";
 import { type DashboardCardState } from "@/domain/dashboardCardState";
+import type { DashboardOtherPeriodCardState } from "@/domain/dashboardOtherPeriodCardState";
 import type { DashboardScheduledCardState } from "@/domain/dashboardScheduledCardState";
 import {
   toDashboardFetchErrorI18nKey,
@@ -26,7 +27,9 @@ import { sports } from "@/domain/sport";
 import { toIntlLocale } from "@/i18n/language";
 import {
   formatDashboardCardSchedule,
+  formatLocalCalendarDate,
   formatScheduledWindowLocalDate,
+  formatScheduledWindowTimeRange,
 } from "@/lib/scheduleFormat";
 import { CONTENT_PADDING } from "@/config/uiLayout";
 import {
@@ -34,10 +37,16 @@ import {
   DASHBOARD_CARD_HIT_LAYER_Z_INDEX,
 } from "@/config/uiScale";
 
+type DashboardWindowMetricsState = Extract<
+  DashboardScheduledCardState | DashboardOtherPeriodCardState,
+  { status: "ok" }
+>;
+
 interface DashboardCardProps {
   card: SavedDashboardCard;
   cardState: DashboardCardState;
   scheduledCardState: DashboardScheduledCardState | null;
+  otherPeriodCardState: DashboardOtherPeriodCardState | null;
   viewMode: DashboardViewMode;
   index: number;
   totalCount: number;
@@ -79,46 +88,68 @@ function DashboardCardStatusMessage({
   );
 }
 
+function dashboardWindowScheduleErrorKey(
+  status: string,
+  mode: "my_schedule" | "other_time_period",
+): string {
+  if (status === "missing_schedule") {
+    return "dashboard.cardErrors.missingSchedule";
+  }
+  if (status === "incomplete_forecast") {
+    return mode === "other_time_period"
+      ? "dashboard.cardErrors.otherPeriodForecastUnavailable"
+      : "dashboard.cardErrors.scheduleForecastUnavailable";
+  }
+
+  return mode === "other_time_period"
+    ? "dashboard.cardErrors.otherPeriodUnavailable"
+    : "dashboard.cardErrors.scheduleUnavailable";
+}
+
+function DashboardCardWindowMetrics({
+  sessionHeading,
+  metrics,
+}: {
+  sessionHeading: string | null;
+  metrics: DashboardWindowMetricsState;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Stack gap={4}>
+      {sessionHeading ? (
+        <Text c="dimmed" fz="sm" fw={600}>
+          {sessionHeading}
+        </Text>
+      ) : null}
+      <DashboardMetricColumnLabel>
+        {t("dashboard.cards.metrics.average")}
+      </DashboardMetricColumnLabel>
+      <RiskStackedBar score={metrics.averageRiskScore} />
+      <DashboardCardRangeLine
+        minScore={metrics.minRiskScore}
+        minLevel={metrics.minRiskLevel}
+        maxScore={metrics.maxRiskScore}
+        maxLevel={metrics.maxRiskLevel}
+      />
+    </Stack>
+  );
+}
+
 function DashboardCardMetricsContent({
   cardState,
   scheduledCardState,
+  otherPeriodCardState,
   viewMode,
   intlLocale,
 }: {
   cardState: DashboardCardState;
   scheduledCardState: DashboardScheduledCardState | null;
+  otherPeriodCardState: DashboardOtherPeriodCardState | null;
   viewMode: DashboardViewMode;
   intlLocale: string;
 }) {
   const { t } = useTranslation();
-
-  const activeState =
-    viewMode === "my_schedule" ? scheduledCardState : cardState;
-
-  if (!activeState || activeState.status !== "ok") {
-    if (
-      viewMode === "my_schedule" &&
-      activeState &&
-      !["loading", "fetch_error", "location_error", "missing_result"].includes(
-        activeState.status,
-      )
-    ) {
-      const scheduleErrorKey =
-        activeState.status === "missing_schedule"
-          ? "dashboard.cardErrors.missingSchedule"
-          : activeState.status === "incomplete_forecast"
-            ? "dashboard.cardErrors.scheduleForecastUnavailable"
-            : "dashboard.cardErrors.scheduleUnavailable";
-
-      return (
-        <Text c="dimmed" fz="sm">
-          {t(scheduleErrorKey)}
-        </Text>
-      );
-    }
-
-    return <DashboardCardStatusMessage cardState={cardState} />;
-  }
 
   if (viewMode === "now") {
     if (cardState.status !== "ok") {
@@ -139,44 +170,48 @@ function DashboardCardMetricsContent({
     );
   }
 
-  if (viewMode === "my_schedule") {
-    if (!scheduledCardState || scheduledCardState.status !== "ok") {
+  const windowState =
+    viewMode === "my_schedule" ? scheduledCardState : otherPeriodCardState;
+  const windowMode =
+    viewMode === "my_schedule" ? "my_schedule" : "other_time_period";
+
+  if (!windowState || windowState.status !== "ok") {
+    if (
+      windowState &&
+      (windowState.status === "missing_selection" ||
+        windowState.status === "invalid_selection")
+    ) {
       return null;
     }
 
-    return (
-      <Stack gap={4}>
-        <Text c="dimmed" fz="sm" fw={600}>
-          {t("dashboard.cards.nextSessionHeading", {
-            date: formatScheduledWindowLocalDate(
-              scheduledCardState.window,
-              intlLocale,
-            ),
-          })}
+    if (
+      windowState &&
+      !["loading", "fetch_error", "location_error", "missing_result"].includes(
+        windowState.status,
+      )
+    ) {
+      return (
+        <Text c="dimmed" fz="sm">
+          {t(dashboardWindowScheduleErrorKey(windowState.status, windowMode))}
         </Text>
-        <DashboardMetricColumnLabel>
-          {t("dashboard.cards.metrics.average")}
-        </DashboardMetricColumnLabel>
-        <RiskStackedBar score={scheduledCardState.averageRiskScore} />
-        <DashboardCardRangeLine
-          minScore={scheduledCardState.minRiskScore}
-          minLevel={scheduledCardState.minRiskLevel}
-          maxScore={scheduledCardState.maxRiskScore}
-          maxLevel={scheduledCardState.maxRiskLevel}
-        />
-      </Stack>
-    );
+      );
+    }
+
+    return <DashboardCardStatusMessage cardState={cardState} />;
   }
 
+  const sessionHeading =
+    viewMode === "my_schedule"
+      ? t("dashboard.cards.nextSessionHeading", {
+          date: formatScheduledWindowLocalDate(windowState.window, intlLocale),
+        })
+      : null;
+
   return (
-    <Stack gap={4}>
-      <DashboardMetricColumnLabel>
-        {t("dashboard.viewMode.otherTimePeriodMetricLabel")}
-      </DashboardMetricColumnLabel>
-      <Text c="dimmed" fz="sm">
-        {t("dashboard.viewMode.otherTimePeriodCardPlaceholder")}
-      </Text>
-    </Stack>
+    <DashboardCardWindowMetrics
+      sessionHeading={sessionHeading}
+      metrics={windowState}
+    />
   );
 }
 
@@ -269,6 +304,7 @@ export function DashboardCard({
   card,
   cardState,
   scheduledCardState,
+  otherPeriodCardState,
   viewMode,
   index,
   totalCount,
@@ -289,12 +325,39 @@ export function DashboardCard({
     location: card.name,
   });
   const intlLocale = toIntlLocale(i18n.resolvedLanguage);
+  const formatNextDayTime = (time: string) =>
+    t("dashboard.cards.nextDayTime", { time });
   const scheduleLabel =
-    viewMode !== "now" && card.schedule
-      ? formatDashboardCardSchedule(card.schedule, intlLocale, (time) =>
-          t("dashboard.cards.nextDayTime", { time }),
+    viewMode === "my_schedule" && card.schedule
+      ? formatDashboardCardSchedule(
+          card.schedule,
+          intlLocale,
+          formatNextDayTime,
         )
-      : null;
+      : viewMode === "other_time_period" &&
+          otherPeriodCardState &&
+          (otherPeriodCardState.status === "ok" ||
+            otherPeriodCardState.status === "incomplete_forecast")
+        ? t("dashboard.cards.selectedPeriodHeader", {
+            date: formatScheduledWindowLocalDate(
+              otherPeriodCardState.window,
+              intlLocale,
+            ),
+            times: formatScheduledWindowTimeRange(
+              otherPeriodCardState.window,
+              intlLocale,
+              formatNextDayTime,
+            ),
+          })
+        : viewMode === "other_time_period" &&
+            otherPeriodCardState?.status === "unresolved_local_time"
+          ? t("dashboard.cards.selectedPeriodDateHeader", {
+              date: formatLocalCalendarDate(
+                otherPeriodCardState.localDate,
+                intlLocale,
+              ),
+            })
+          : null;
   const homePath = buildDashboardHomePath(card.sport, card.displayLabel);
   const openHomeAriaLabel = t("dashboard.cards.openHomeAriaLabel", {
     title: cardTitle,
@@ -302,7 +365,9 @@ export function DashboardCard({
 
   if (
     cardState.status === "loading" ||
-    (viewMode === "my_schedule" && scheduledCardState?.status === "loading")
+    (viewMode === "my_schedule" && scheduledCardState?.status === "loading") ||
+    (viewMode === "other_time_period" &&
+      otherPeriodCardState?.status === "loading")
   ) {
     return <DashboardCardSkeleton />;
   }
@@ -339,6 +404,7 @@ export function DashboardCard({
           <DashboardCardMetricsContent
             cardState={cardState}
             scheduledCardState={scheduledCardState}
+            otherPeriodCardState={otherPeriodCardState}
             viewMode={viewMode}
             intlLocale={intlLocale}
           />

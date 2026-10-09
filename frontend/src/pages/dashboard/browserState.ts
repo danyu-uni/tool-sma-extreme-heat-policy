@@ -5,6 +5,11 @@ import {
   validateDashboardCardSchedule,
 } from "@/domain/dashboard";
 import {
+  createDefaultDashboardOtherPeriodDraft,
+  isRestorableDashboardOtherPeriodDraft,
+  type DashboardOtherPeriodDraft,
+} from "@/domain/dashboardOtherPeriod";
+import {
   DEFAULT_DASHBOARD_VIEW_MODE,
   parseDashboardViewMode,
   type DashboardViewMode,
@@ -14,6 +19,7 @@ import { isValidPersistedSport } from "@/pages/home/browserState";
 
 const DASHBOARD_STORAGE_KEY = "dashboard-cards:v1";
 const DASHBOARD_VIEW_MODE_STORAGE_KEY = "dashboard-view-mode:v1";
+const DASHBOARD_OTHER_PERIOD_STORAGE_KEY = "dashboard-other-period:v1";
 
 export interface PersistedDashboardState {
   cards: SavedDashboardCard[];
@@ -187,6 +193,80 @@ export function savePersistedDashboardViewMode(
 
   try {
     window.localStorage.setItem(DASHBOARD_VIEW_MODE_STORAGE_KEY, viewMode);
+  } catch {
+    // Intentionally ignore storage errors to keep UI interaction unblocked.
+  }
+}
+
+function isDashboardOtherPeriodDraft(
+  value: unknown,
+): value is DashboardOtherPeriodDraft {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const weekday = value.weekday;
+  const hasValidWeekday =
+    weekday === null ||
+    (typeof weekday === "number" &&
+      Number.isInteger(weekday) &&
+      weekday >= 0 &&
+      weekday <= 6);
+
+  return (
+    hasValidWeekday &&
+    (value.startMinutes === null ||
+      (typeof value.startMinutes === "number" &&
+        Number.isFinite(value.startMinutes))) &&
+    (value.endMinutes === null ||
+      (typeof value.endMinutes === "number" &&
+        Number.isFinite(value.endMinutes)))
+  );
+}
+
+/**
+ * Loads the persisted other-period picker draft, falling back to defaults.
+ */
+export function loadPersistedDashboardOtherPeriodDraft(): DashboardOtherPeriodDraft {
+  if (typeof window === "undefined") {
+    return createDefaultDashboardOtherPeriodDraft();
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DASHBOARD_OTHER_PERIOD_STORAGE_KEY);
+    if (!raw) {
+      return createDefaultDashboardOtherPeriodDraft();
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      !isDashboardOtherPeriodDraft(parsed) ||
+      !isRestorableDashboardOtherPeriodDraft(parsed)
+    ) {
+      return createDefaultDashboardOtherPeriodDraft();
+    }
+
+    return parsed;
+  } catch {
+    return createDefaultDashboardOtherPeriodDraft();
+  }
+}
+
+/**
+ * Persists the other-period picker draft into localStorage (best-effort).
+ */
+export function savePersistedDashboardOtherPeriodDraft(
+  draft: DashboardOtherPeriodDraft,
+): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      DASHBOARD_OTHER_PERIOD_STORAGE_KEY,
+      JSON.stringify(draft),
+    );
   } catch {
     // Intentionally ignore storage errors to keep UI interaction unblocked.
   }

@@ -19,6 +19,11 @@ import {
   type SavedDashboardCard,
 } from "@/domain/dashboard";
 import type { WeeklyPreviewSource } from "@/domain/weeklyWindowPreview";
+import { resolveDashboardOtherPeriodDraft } from "@/domain/dashboardOtherPeriod";
+import {
+  resolveDashboardOtherPeriodCardState,
+  type DashboardOtherPeriodCardState,
+} from "@/domain/dashboardOtherPeriodCardState";
 import {
   resolveDashboardScheduledCardState,
   type DashboardScheduledCardState,
@@ -37,6 +42,10 @@ interface UseDashboardHeatRiskResult {
     card: SavedDashboardCard,
     now: Date,
   ) => DashboardScheduledCardState;
+  getOtherPeriodCardState: (
+    card: SavedDashboardCard,
+    now: Date,
+  ) => DashboardOtherPeriodCardState;
   hasLoadedCardData: boolean;
   refresh: () => Promise<DashboardHeatRiskRefreshResult>;
 }
@@ -76,7 +85,12 @@ function toDashboardCardQueryView(
  */
 export function useDashboardHeatRisk(): UseDashboardHeatRiskResult {
   const cards = useDashboardStore((state) => state.cards);
+  const otherPeriodDraft = useDashboardStore((state) => state.otherPeriodDraft);
   const profile = DEFAULT_HEAT_RISK_PROFILE;
+  const otherPeriodResolvedDraft = useMemo(
+    () => resolveDashboardOtherPeriodDraft(otherPeriodDraft),
+    [otherPeriodDraft],
+  );
 
   const queryCards = useMemo(() => {
     const cardsByKey = new Map<string, SavedDashboardCard>();
@@ -190,11 +204,23 @@ export function useDashboardHeatRisk(): UseDashboardHeatRiskResult {
     );
   }
 
+  function getOtherPeriodCardState(
+    card: SavedDashboardCard,
+    now: Date,
+  ): DashboardOtherPeriodCardState {
+    return resolveDashboardOtherPeriodCardState(
+      getCardQueryView(card),
+      otherPeriodResolvedDraft,
+      now,
+    );
+  }
+
   return {
     getWeeklyPreviewSource: (card) =>
       resolveWeeklyPreviewSourceFromQuery(getCardQueryView(card)),
     getCardState,
     getScheduledCardState,
+    getOtherPeriodCardState,
     hasLoadedCardData,
     refresh,
   };

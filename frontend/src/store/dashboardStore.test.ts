@@ -6,9 +6,12 @@ import {
 } from "@/domain/dashboard";
 import type { LocationSuggestion } from "@/domain/location";
 import { SportType } from "@/domain/sport";
+import { createDefaultDashboardOtherPeriodDraft } from "@/domain/dashboardOtherPeriod";
 import { DEFAULT_DASHBOARD_VIEW_MODE } from "@/domain/dashboardViewMode";
 import {
+  loadPersistedDashboardOtherPeriodDraft,
   loadPersistedDashboardViewMode,
+  savePersistedDashboardOtherPeriodDraft,
   savePersistedDashboardViewMode,
 } from "@/pages/dashboard/browserState";
 import { useDashboardStore } from "@/store/dashboardStore";
@@ -72,6 +75,9 @@ function resetDashboardStore() {
   useDashboardStore.setState({
     isBootstrapped: false,
     viewMode: DEFAULT_DASHBOARD_VIEW_MODE,
+    otherPeriodDraft: createDefaultDashboardOtherPeriodDraft(
+      new Date("2026-09-15T00:00:00Z"),
+    ),
     draftSport: SportType.Soccer,
     draftLocation: null,
     cards: [],
@@ -140,6 +146,52 @@ describe("dashboardStore", () => {
     });
 
     expect(useDashboardStore.getState().viewMode).toBe("other_time_period");
+  });
+
+  it("bootstraps with the saved other-period draft instead of the default", () => {
+    savePersistedDashboardOtherPeriodDraft({
+      weekday: 4,
+      startMinutes: 540,
+      endMinutes: 660,
+    });
+
+    useDashboardStore.getState().bootstrap({
+      cards: [],
+    });
+
+    expect(useDashboardStore.getState().otherPeriodDraft).toEqual({
+      weekday: 4,
+      startMinutes: 540,
+      endMinutes: 660,
+    });
+    expect(loadPersistedDashboardOtherPeriodDraft()).toEqual({
+      weekday: 4,
+      startMinutes: 540,
+      endMinutes: 660,
+    });
+  });
+
+  it("bootstraps with an explicit other-period draft when provided", () => {
+    savePersistedDashboardOtherPeriodDraft({
+      weekday: 4,
+      startMinutes: 540,
+      endMinutes: 660,
+    });
+
+    useDashboardStore.getState().bootstrap({
+      cards: [],
+      otherPeriodDraft: {
+        weekday: 1,
+        startMinutes: 1080,
+        endMinutes: 1200,
+      },
+    });
+
+    expect(useDashboardStore.getState().otherPeriodDraft).toEqual({
+      weekday: 1,
+      startMinutes: 1080,
+      endMinutes: 1200,
+    });
   });
 
   it("adds, reorders, and removes saved cards", () => {
@@ -212,6 +264,23 @@ describe("dashboardStore", () => {
     expect(useDashboardStore.getState().viewMode).toBe("my_schedule");
     expect(storage.get(DASHBOARD_VIEW_MODE_STORAGE_KEY)).toBe("my_schedule");
     expect(loadPersistedDashboardViewMode()).toBe("my_schedule");
+  });
+
+  it("updates the other-period draft and persists the selection", () => {
+    useDashboardStore.getState().setOtherPeriodWeekday(4);
+    useDashboardStore.getState().setOtherPeriodStartMinutes(540);
+    useDashboardStore.getState().setOtherPeriodEndMinutes(660);
+
+    expect(useDashboardStore.getState().otherPeriodDraft).toEqual({
+      weekday: 4,
+      startMinutes: 540,
+      endMinutes: 660,
+    });
+    expect(loadPersistedDashboardOtherPeriodDraft()).toEqual({
+      weekday: 4,
+      startMinutes: 540,
+      endMinutes: 660,
+    });
   });
 
   it("rejects duplicate cards for the same sport and location", () => {

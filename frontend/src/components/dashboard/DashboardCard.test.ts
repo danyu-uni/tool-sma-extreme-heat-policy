@@ -7,6 +7,7 @@ import type {
   SavedDashboardCard,
 } from "@/domain/dashboard";
 import type { DashboardCardState } from "@/domain/dashboardCardState";
+import type { DashboardOtherPeriodCardState } from "@/domain/dashboardOtherPeriodCardState";
 import type { DashboardScheduledCardState } from "@/domain/dashboardScheduledCardState";
 import { sydneyCard as baseSydneyCard } from "@/test/weeklyWindowFixtures";
 import { createDashboardComponentHost } from "@/test/dashboardComponentHarness";
@@ -46,6 +47,9 @@ const OK_SCHEDULED_CARD_STATE: DashboardScheduledCardState = {
   maxRiskLevel: "moderate",
 };
 
+const OK_OTHER_PERIOD_CARD_STATE: DashboardOtherPeriodCardState =
+  OK_SCHEDULED_CARD_STATE;
+
 const CARD_ACTIONS = {
   index: 0,
   totalCount: 1,
@@ -78,6 +82,12 @@ function renderCard(
         viewMode === "my_schedule"
           ? cardState.status === "ok"
             ? OK_SCHEDULED_CARD_STATE
+            : cardState
+          : null,
+      otherPeriodCardState:
+        viewMode === "other_time_period"
+          ? cardState.status === "ok"
+            ? OK_OTHER_PERIOD_CARD_STATE
             : cardState
           : null,
       viewMode,
@@ -118,13 +128,76 @@ describe("DashboardCard", () => {
     expect(harness.host.textContent).toContain("Next session ·");
   });
 
-  it("renders selected-period placeholder metrics for other time period mode", () => {
+  it("shows the unresolved date without My schedule wording", () => {
+    harness.render(
+      createElement(DashboardCard, {
+        card: sydneyCard,
+        cardState: OK_CARD_STATE,
+        scheduledCardState: null,
+        otherPeriodCardState: {
+          status: "unresolved_local_time",
+          localDate: "2026-10-04",
+          timeZone: "Australia/Sydney",
+        },
+        viewMode: "other_time_period",
+        ...CARD_ACTIONS,
+      }),
+    );
+
+    expect(harness.host.textContent).toContain("Selected ·");
+    expect(harness.host.textContent).toContain("4 Oct");
+    expect(harness.host.textContent).toContain(
+      "The selected time period could not be calculated for this location.",
+    );
+    expect(harness.host.textContent).not.toContain("next scheduled window");
+  });
+
+  it("does not repeat an incomplete selection on the card", () => {
+    harness.render(
+      createElement(DashboardCard, {
+        card: sydneyCard,
+        cardState: OK_CARD_STATE,
+        scheduledCardState: null,
+        otherPeriodCardState: { status: "missing_selection" },
+        viewMode: "other_time_period",
+        ...CARD_ACTIONS,
+      }),
+    );
+
+    expect(harness.host.textContent).not.toContain("Choose a day");
+    expect(harness.host.textContent).not.toContain("Average");
+  });
+
+  it("shows other-period forecast coverage copy instead of My schedule wording", () => {
+    harness.render(
+      createElement(DashboardCard, {
+        card: sydneyCard,
+        cardState: OK_CARD_STATE,
+        scheduledCardState: null,
+        otherPeriodCardState: {
+          status: "incomplete_forecast",
+          window: OK_SCHEDULED_CARD_STATE.window,
+        },
+        viewMode: "other_time_period",
+        ...CARD_ACTIONS,
+      }),
+    );
+
+    expect(harness.host.textContent).toContain(
+      "Forecast data does not cover the selected time period at this location.",
+    );
+    expect(harness.host.textContent).not.toContain("next scheduled window");
+    expect(harness.host.textContent).not.toContain("Average");
+  });
+
+  it("renders average and explicit Min/Max metrics in Other time period mode", () => {
     renderCard(sydneyCard, "other_time_period");
 
-    expect(harness.host.textContent).toContain("Selected period");
-    expect(harness.host.textContent).toContain(
-      "Average and range metrics will appear here once the selected timeframe is connected.",
-    );
+    expect(harness.host.textContent).toContain("Selected ·");
+    expect(harness.host.textContent).toContain("Average");
+    expect(harness.host.textContent).not.toContain("Next session ·");
+    expect(harness.host.textContent).toContain("Min: 0.9 LOW");
+    expect(harness.host.textContent).toContain("Max: 2.3 MODERATE");
   });
 
   it("shows fetch errors instead of metrics placeholders", () => {

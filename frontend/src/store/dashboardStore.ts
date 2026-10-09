@@ -8,12 +8,15 @@ import {
   validateAddSavedDashboardCard,
 } from "@/domain/dashboard";
 import { DEFAULT_SPORT_TYPE, type SportType } from "@/domain/sport";
+import type { DashboardOtherPeriodDraft } from "@/domain/dashboardOtherPeriod";
 import {
   DEFAULT_DASHBOARD_VIEW_MODE,
   type DashboardViewMode,
 } from "@/domain/dashboardViewMode";
 import {
+  loadPersistedDashboardOtherPeriodDraft,
   loadPersistedDashboardViewMode,
+  savePersistedDashboardOtherPeriodDraft,
   savePersistedDashboardViewMode,
 } from "@/pages/dashboard/browserState";
 
@@ -21,11 +24,13 @@ export interface DashboardStoreBootstrapPayload {
   cards: SavedDashboardCard[];
   draftSport?: SportType;
   viewMode?: DashboardViewMode;
+  otherPeriodDraft?: DashboardOtherPeriodDraft;
 }
 
 interface DashboardStoreState {
   isBootstrapped: boolean;
   viewMode: DashboardViewMode;
+  otherPeriodDraft: DashboardOtherPeriodDraft;
   draftSport: SportType;
   draftLocation: LocationSuggestion | null;
   cards: SavedDashboardCard[];
@@ -34,6 +39,11 @@ interface DashboardStoreState {
 
   bootstrap: (payload: DashboardStoreBootstrapPayload) => void;
   setViewMode: (viewMode: DashboardViewMode) => void;
+  setOtherPeriodWeekday: (
+    weekday: DashboardOtherPeriodDraft["weekday"],
+  ) => void;
+  setOtherPeriodStartMinutes: (startMinutes: number | null) => void;
+  setOtherPeriodEndMinutes: (endMinutes: number | null) => void;
   setDraftSport: (sport: SportType) => void;
   setDraftLocation: (suggestion: LocationSuggestion | null) => void;
   setLocationSearchInput: (value: string) => void;
@@ -86,13 +96,14 @@ function reorderCards(
 export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
   isBootstrapped: false,
   viewMode: DEFAULT_DASHBOARD_VIEW_MODE,
+  otherPeriodDraft: loadPersistedDashboardOtherPeriodDraft(),
   draftSport: DEFAULT_SPORT_TYPE,
   draftLocation: null,
   cards: [],
   locationSearchInput: "",
   locationSessionToken: createSessionToken(),
 
-  bootstrap: ({ cards, draftSport, viewMode }) => {
+  bootstrap: ({ cards, draftSport, viewMode, otherPeriodDraft }) => {
     set({
       isBootstrapped: true,
       cards,
@@ -101,12 +112,32 @@ export const useDashboardStore = create<DashboardStoreState>((set, get) => ({
       locationSearchInput: "",
       locationSessionToken: createSessionToken(),
       viewMode: viewMode ?? loadPersistedDashboardViewMode(),
+      otherPeriodDraft:
+        otherPeriodDraft ?? loadPersistedDashboardOtherPeriodDraft(),
     });
   },
 
   setViewMode: (viewMode) => {
     set({ viewMode });
     savePersistedDashboardViewMode(viewMode);
+  },
+
+  setOtherPeriodWeekday: (weekday) => {
+    const otherPeriodDraft = { ...get().otherPeriodDraft, weekday };
+    set({ otherPeriodDraft });
+    savePersistedDashboardOtherPeriodDraft(otherPeriodDraft);
+  },
+
+  setOtherPeriodStartMinutes: (startMinutes) => {
+    const otherPeriodDraft = { ...get().otherPeriodDraft, startMinutes };
+    set({ otherPeriodDraft });
+    savePersistedDashboardOtherPeriodDraft(otherPeriodDraft);
+  },
+
+  setOtherPeriodEndMinutes: (endMinutes) => {
+    const otherPeriodDraft = { ...get().otherPeriodDraft, endMinutes };
+    set({ otherPeriodDraft });
+    savePersistedDashboardOtherPeriodDraft(otherPeriodDraft);
   },
 
   setDraftSport: (sport) => {

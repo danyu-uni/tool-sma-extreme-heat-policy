@@ -14,13 +14,13 @@ export type WeeklyPreviewSource =
 export type WeeklyPreviewResult =
   | { status: "ok"; window: ScheduledWindow; points: ForecastApiPoint[] }
   | { status: "incomplete_forecast"; window: ScheduledWindow }
+  | { status: "unresolved_local_time"; localDate: string; timeZone: string }
   | {
       status:
         | "loading"
         | "unavailable"
         | "invalid_time_zone"
         | "invalid_window"
-        | "unresolved_local_time"
         | "invalid_forecast";
     };
 
@@ -28,6 +28,7 @@ export function resolveWeeklyWindowPreview(
   draft: Omit<WeeklyWindow, "timeZone">,
   source: WeeklyPreviewSource,
   now: Date,
+  options?: { includeInProgress?: boolean },
 ): WeeklyPreviewResult {
   if (source.status !== "ok") return { status: source.status };
   const { result } = source;
@@ -36,6 +37,7 @@ export function resolveWeeklyWindowPreview(
   const next = getNextWeeklyWindow(
     { ...draft, timeZone: result.timezone },
     now,
+    options,
   );
   if (next.status === "invalid") {
     return {
@@ -45,7 +47,13 @@ export function resolveWeeklyWindowPreview(
           : "invalid_window",
     };
   }
-  if (next.status !== "ok") return { status: "unresolved_local_time" };
+  if (next.status !== "ok") {
+    return {
+      status: "unresolved_local_time",
+      localDate: next.localDate,
+      timeZone: result.timezone,
+    };
+  }
   const selected = selectWeeklyWindowForecast(result.forecast, next.window);
   if (selected.status === "ok") return { ...selected, window: next.window };
   if (selected.status === "incomplete_forecast")

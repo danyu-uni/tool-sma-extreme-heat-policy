@@ -55,6 +55,32 @@ function createLocalClock(timeZone: string): Intl.DateTimeFormat {
   });
 }
 
+export type SameDayTimeRangeValidationError = Exclude<
+  WeeklyWindowFieldsValidationError,
+  "invalid_weekdays"
+>;
+
+export function validateSameDayTimeRange(
+  startMinutes: number,
+  endMinutes: number,
+): SameDayTimeRangeValidationError | null {
+  if (
+    !Number.isInteger(startMinutes) ||
+    !Number.isInteger(endMinutes) ||
+    startMinutes < 0 ||
+    startMinutes >= 1440 ||
+    endMinutes <= 0 ||
+    endMinutes > 1440 ||
+    startMinutes === endMinutes
+  ) {
+    return "invalid_minutes";
+  }
+  if (endMinutes < startMinutes) {
+    return "unsupported_overnight_window";
+  }
+  return null;
+}
+
 export function validateWeeklyWindowFields(
   window: Omit<WeeklyWindow, "timeZone">,
 ): WeeklyWindowFieldsValidationError | null {
@@ -67,21 +93,8 @@ export function validateWeeklyWindowFields(
   ) {
     return "invalid_weekdays";
   }
-  if (
-    !Number.isInteger(window.startMinutes) ||
-    !Number.isInteger(window.endMinutes) ||
-    window.startMinutes < 0 ||
-    window.startMinutes >= 1440 ||
-    window.endMinutes <= 0 ||
-    window.endMinutes > 1440 ||
-    window.startMinutes === window.endMinutes
-  ) {
-    return "invalid_minutes";
-  }
-  if (window.endMinutes < window.startMinutes) {
-    return "unsupported_overnight_window";
-  }
-  return null;
+
+  return validateSameDayTimeRange(window.startMinutes, window.endMinutes);
 }
 
 export function validateWeeklyWindow(
@@ -131,15 +144,63 @@ function resolveWallClock(
     .sort((a, b) => a - b);
 }
 
+type ScheduledWindowResolutionResult =
+  | { status: "ok"; window: ScheduledWindow }
+  | {
+      status: "unresolved_local_time";
+      reason: "nonexistent" | "ambiguous";
+      localDate: string;
+    };
+
+function scheduledWindowForLocalDay(
+  clock: Intl.DateTimeFormat,
+  dayEpoch: number,
+  localDate: string,
+  timeZone: string,
+  startMinutes: number,
+  endMinutes: number,
+): ScheduledWindowResolutionResult {
+  const startWall = dayEpoch + startMinutes * MINUTE_MS;
+  const startInstants = resolveWallClock(clock, startWall);
+  const endInstants = resolveWallClock(
+    clock,
+    dayEpoch + endMinutes * MINUTE_MS,
+  );
+
+  if (startInstants.length !== 1 || endInstants.length !== 1) {
+    return {
+      status: "unresolved_local_time",
+      reason:
+        startInstants.length === 0 || endInstants.length === 0
+          ? "nonexistent"
+          : "ambiguous",
+      localDate,
+    };
+  }
+
+  return {
+    status: "ok",
+    window: {
+      localDate,
+      timeZone,
+      startUtc: new Date(startInstants[0]).toISOString(),
+      endUtc: new Date(endInstants[0]).toISOString(),
+    },
+  };
+}
+
 /**
  * Resolves the next window whose start is at or after now, in the location's
- * timezone. Already-started windows roll forward. DST gaps/folds are returned
- * explicitly; callers must not silently shift a user's selected time.
- * End minute 1440 means midnight following the selected weekday.
+ * timezone. Already-started windows roll forward unless `includeInProgress`
+ * is set, in which case a window is kept until its end is before now.
+ * DST gaps/folds are returned explicitly; callers must not silently shift a
+ * user's selected time. End minute 1440 means midnight following the selected
+ * weekday.
  */
 export function getNextWeeklyWindow(
   window: WeeklyWindow,
   now: Date,
+  options?: { includeInProgress?: boolean },
 ): NextWeeklyWindowResult {
   const reason = validateWeeklyWindow(window);
   if (reason) return { status: "invalid", reason };
@@ -159,38 +220,33 @@ export function getNextWeeklyWindow(
 
     const startWall = day + window.startMinutes * MINUTE_MS;
     const startInstants = resolveWallClock(clock, startWall);
+    const boundaryWall = options?.includeInProgress
+      ? day + window.endMinutes * MINUTE_MS
+      : startWall;
+    const boundaryInstants = options?.includeInProgress
+      ? resolveWallClock(clock, boundaryWall)
+      : startInstants;
     if (
-      startInstants.length > 0
-        ? startInstants.every((instant) => instant < nowMs)
-        : startWall < localNow
+      boundaryInstants.length > 0
+        ? boundaryInstants.every((instant) => instant < nowMs)
+        : boundaryWall < localNow
     ) {
       continue;
     }
 
     const localDate = new Date(day).toISOString().slice(0, 10);
-    const endInstants = resolveWallClock(
+    const resolved = scheduledWindowForLocalDay(
       clock,
-      day + window.endMinutes * MINUTE_MS,
+      day,
+      localDate,
+      window.timeZone,
+      window.startMinutes,
+      window.endMinutes,
     );
-    if (startInstants.length !== 1 || endInstants.length !== 1) {
-      return {
-        status: "unresolved_local_time",
-        reason:
-          startInstants.length === 0 || endInstants.length === 0
-            ? "nonexistent"
-            : "ambiguous",
-        localDate,
-      };
+    if (resolved.status !== "ok") {
+      return resolved;
     }
-    return {
-      status: "ok",
-      window: {
-        localDate,
-        timeZone: window.timeZone,
-        startUtc: new Date(startInstants[0]).toISOString(),
-        endUtc: new Date(endInstants[0]).toISOString(),
-      },
-    };
+    return resolved;
   }
   // A valid weekday always occurs within the inclusive eight-day search.
   throw new Error("Could not resolve a validated weekly window");

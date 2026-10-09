@@ -70,9 +70,12 @@ Notes:
 - Dashboard heat-risk requests always use `DEFAULT_HEAT_RISK_PROFILE` (`ADULT`).
   Home profile selection does not apply on `/dashboard`.
 - **Now** mode shows the stacked risk bar plus today's max on each card.
-  **My schedule** and **Other time period** are UI placeholders until schedule
-  and timeframe calculations are connected; the selected mode is kept in memory
-  only (not persisted across refresh).
+  **My schedule** shows average and min/max risk for the next upcoming session
+  on each card's saved weekly schedule. **Other time period** uses the same card
+  metrics for the current or next occurrence of a weekday and time range you choose in the
+  dashboard mode panel; each card resolves that window in its location timezone. The
+  selected mode and other-period picker are persisted in `localStorage`
+  (`dashboard-view-mode:v1`, `dashboard-other-period:v1`).
 
 ## Weekly-window development preview (#67)
 

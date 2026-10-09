@@ -3,6 +3,7 @@ import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { CONTENT_GAP } from "@/config/uiLayout";
 import type { SavedDashboardCard } from "@/domain/dashboard";
 import type { DashboardCardState } from "@/domain/dashboardCardState";
+import type { DashboardOtherPeriodCardState } from "@/domain/dashboardOtherPeriodCardState";
 import type { DashboardScheduledCardState } from "@/domain/dashboardScheduledCardState";
 import type { DashboardViewMode } from "@/domain/dashboardViewMode";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
@@ -16,6 +17,10 @@ interface DashboardCardListProps {
     card: SavedDashboardCard,
     now: Date,
   ) => DashboardScheduledCardState;
+  getOtherPeriodCardState: (
+    card: SavedDashboardCard,
+    now: Date,
+  ) => DashboardOtherPeriodCardState;
   scheduleNow: Date;
 }
 
@@ -27,6 +32,7 @@ export function DashboardCardList({
   viewMode,
   getCardState,
   getScheduledCardState,
+  getOtherPeriodCardState,
   scheduleNow,
 }: DashboardCardListProps) {
   const isMobile = useIsMobileViewport();
@@ -42,6 +48,11 @@ export function DashboardCardList({
       scheduledCardState={
         viewMode === "my_schedule"
           ? getScheduledCardState(card, scheduleNow)
+          : null
+      }
+      otherPeriodCardState={
+        viewMode === "other_time_period"
+          ? getOtherPeriodCardState(card, scheduleNow)
           : null
       }
       viewMode={viewMode}

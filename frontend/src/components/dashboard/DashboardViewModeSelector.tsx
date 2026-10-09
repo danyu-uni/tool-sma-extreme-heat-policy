@@ -1,10 +1,15 @@
-import { SegmentedControl, Stack, Text } from "@mantine/core";
+import { Collapse, SegmentedControl, Stack } from "@mantine/core";
 import { useTranslation } from "react-i18next";
+import { DashboardOtherPeriodFields } from "@/components/dashboard/DashboardOtherPeriodFields";
+import { CONTENT_GAP } from "@/config/uiLayout";
 import {
   DASHBOARD_VIEW_MODES,
   isDashboardViewMode,
   type DashboardViewMode,
 } from "@/domain/dashboardViewMode";
+import { useDashboardStore } from "@/store/dashboardStore";
+
+const FIELD_LABEL_WIDTH = 72;
 
 interface DashboardViewModeSelectorProps {
   value: DashboardViewMode;
@@ -19,9 +24,20 @@ export function DashboardViewModeSelector({
   onChange,
 }: DashboardViewModeSelectorProps) {
   const { t } = useTranslation();
+  const isOtherPeriodActive = value === "other_time_period";
+  const otherPeriodDraft = useDashboardStore((state) => state.otherPeriodDraft);
+  const setOtherPeriodWeekday = useDashboardStore(
+    (state) => state.setOtherPeriodWeekday,
+  );
+  const setOtherPeriodStartMinutes = useDashboardStore(
+    (state) => state.setOtherPeriodStartMinutes,
+  );
+  const setOtherPeriodEndMinutes = useDashboardStore(
+    (state) => state.setOtherPeriodEndMinutes,
+  );
 
   return (
-    <Stack gap="xs">
+    <Stack gap={CONTENT_GAP}>
       <SegmentedControl
         fullWidth
         value={value}
@@ -36,11 +52,17 @@ export function DashboardViewModeSelector({
         }))}
         aria-label={t("dashboard.viewMode.label")}
       />
-      {value === "other_time_period" ? (
-        <Text c="dimmed" fz="sm">
-          {t("dashboard.viewMode.otherTimePeriodPlaceholderHint")}
-        </Text>
-      ) : null}
+      <Collapse in={isOtherPeriodActive}>
+        {isOtherPeriodActive ? (
+          <DashboardOtherPeriodFields
+            draft={otherPeriodDraft}
+            onWeekdayChange={setOtherPeriodWeekday}
+            onStartMinutesChange={setOtherPeriodStartMinutes}
+            onEndMinutesChange={setOtherPeriodEndMinutes}
+            labelWidth={FIELD_LABEL_WIDTH}
+          />
+        ) : null}
+      </Collapse>
     </Stack>
   );
 }

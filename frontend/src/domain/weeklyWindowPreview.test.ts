@@ -106,7 +106,11 @@ describe("weekly preview integration", () => {
         { status: "ok", result: location() },
         new Date("2026-10-03T00:00:00Z"),
       ),
-    ).toEqual({ status: "unresolved_local_time" });
+    ).toEqual({
+      status: "unresolved_local_time",
+      localDate: "2026-10-04",
+      timeZone: "Australia/Sydney",
+    });
   });
   it("rejects invalid scores without mapping them to low risk", () => {
     const result = location();

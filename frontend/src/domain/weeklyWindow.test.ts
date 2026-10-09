@@ -93,6 +93,25 @@ describe("next weekly window", () => {
     });
   });
 
+  it("keeps an in-progress occurrence when asked, and rolls it once it has ended", () => {
+    expect(
+      getNextWeeklyWindow(TUESDAY, new Date("2026-09-15T08:00:01Z"), {
+        includeInProgress: true,
+      }),
+    ).toMatchObject({
+      status: "ok",
+      window: { startUtc: "2026-09-15T08:00:00.000Z" },
+    });
+    expect(
+      getNextWeeklyWindow(TUESDAY, new Date("2026-09-15T10:00:01Z"), {
+        includeInProgress: true,
+      }),
+    ).toMatchObject({
+      status: "ok",
+      window: { startUtc: "2026-09-22T08:00:00.000Z" },
+    });
+  });
+
   it("chooses the earliest selected weekday regardless of array order", () => {
     expect(
       getNextWeeklyWindow(

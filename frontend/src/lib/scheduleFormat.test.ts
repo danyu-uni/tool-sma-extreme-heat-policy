@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatDashboardCardSchedule,
   formatMinutesOfDay,
+  formatScheduledWindowTimeRange,
   formatWeekday,
 } from "@/lib/scheduleFormat";
 
@@ -86,4 +87,48 @@ describe("formatDashboardCardSchedule", () => {
 
     expect(schedule.weekdays).toEqual([4, 2]);
   });
+});
+
+describe("formatScheduledWindowTimeRange", () => {
+  const sydneyEveningWindow = {
+    localDate: "2026-09-15",
+    timeZone: "Australia/Sydney",
+    startUtc: "2026-09-15T08:00:00.000Z",
+    endUtc: "2026-09-15T10:00:00.000Z",
+  };
+  const sydneyMidnightWindow = {
+    localDate: "2026-09-15",
+    timeZone: "Australia/Sydney",
+    startUtc: "2026-09-15T11:00:00.000Z",
+    endUtc: "2026-09-15T14:00:00.000Z",
+  };
+
+  it.each([
+    ["en-AU", formatEnglishNextDay, "6:00 pm – 8:00 pm"],
+    ["zh-CN", formatChineseNextDay, "18:00 – 20:00"],
+  ])("formats a same-day range in %s", (locale, formatNextDayTime, label) => {
+    expect(
+      formatScheduledWindowTimeRange(
+        sydneyEveningWindow,
+        locale,
+        formatNextDayTime,
+      ),
+    ).toBe(label);
+  });
+
+  it.each([
+    ["en-AU", formatEnglishNextDay, "9:00 pm – 12:00 am (next day)"],
+    ["zh-CN", formatChineseNextDay, "21:00 – 0:00（次日）"],
+  ])(
+    "marks a range ending at the next midnight in %s",
+    (locale, formatNextDayTime, label) => {
+      expect(
+        formatScheduledWindowTimeRange(
+          sydneyMidnightWindow,
+          locale,
+          formatNextDayTime,
+        ),
+      ).toBe(label);
+    },
+  );
 });

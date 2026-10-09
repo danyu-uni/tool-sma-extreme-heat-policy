@@ -322,7 +322,7 @@
     },
     "header": {
       "title": "My dashboard",
-      "description": "Select a location, sport, and practice schedule to add a card. Switch dashboard mode between Now, My schedule, and Other time period to control what each card shows. Now shows live risk at each location. My schedule shows risk details for the next upcoming session on that card's saved schedule. You can add up to {{maxCards}} cards."
+      "description": "Select a location, sport, and practice schedule to add a card. Switch dashboard mode between Now, My schedule, and Other time period to control what each card shows. Now shows live risk at each location. My schedule shows risk details for the next upcoming session on that card's saved schedule. Other time period shows average and min/max risk for the next occurrence of a weekday and time range you choose. You can add up to {{maxCards}} cards."
     },
     "addLocation": {
       "openFormButton": "Add card",
@@ -350,6 +350,8 @@
       "moveDown": "Move down",
       "nextDayTime": "{{time}} (next day)",
       "nextSessionHeading": "Next session · {{date}}",
+      "selectedPeriodHeader": "Selected · {{date}} · {{times}}",
+      "selectedPeriodDateHeader": "Selected · {{date}}",
       "metrics": {
         "current": "Current",
         "maxRiskToday": "Max risk (today):",
@@ -367,7 +369,9 @@
       "riskCalculationFailed": "Risk could not be calculated for this location.",
       "missingSchedule": "This card has no saved schedule.",
       "scheduleForecastUnavailable": "Forecast data does not yet cover the next scheduled window.",
-      "scheduleUnavailable": "The next scheduled window could not be calculated."
+      "scheduleUnavailable": "The next scheduled window could not be calculated.",
+      "otherPeriodForecastUnavailable": "Forecast data does not cover the selected time period at this location.",
+      "otherPeriodUnavailable": "The selected time period could not be calculated for this location."
     },
     "errors": {
       "missing_token": "Location search is unavailable because Mapbox is not configured.",
@@ -382,9 +386,9 @@
     },
     "viewMode": {
       "label": "Dashboard mode",
-      "otherTimePeriodPlaceholderHint": "Other time period metrics are coming soon.",
-      "otherTimePeriodMetricLabel": "Selected period",
-      "otherTimePeriodCardPlaceholder": "Average and range metrics will appear here once the selected timeframe is connected.",
+      "otherPeriodDayLabel": "Day",
+      "otherPeriodTimeHint": "Choose a day and a time range to view for all cards.",
+      "otherPeriodInvalidHint": "Choose an end time later than the start. Overnight windows are not supported.",
       "options": {
         "now": "Now",
         "my_schedule": "My schedule",
