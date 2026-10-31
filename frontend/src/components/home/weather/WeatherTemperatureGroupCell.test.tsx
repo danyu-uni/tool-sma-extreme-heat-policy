@@ -1,6 +1,6 @@
 import { MantineProvider } from "@mantine/core";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { WeatherTemperatureGroupCell } from "@/components/home/weather/WeatherTemperatureGroupCell";
 import { WEATHER_TEMPERATURE_GROUPS } from "@/domain/weatherDetailsRegistry";
 import type { DayWeatherDetails } from "@/domain/weatherSummary";
@@ -17,12 +17,18 @@ function translate(key: string, options?: Record<string, string>): string {
   return key;
 }
 
+const i18nState = vi.hoisted(() => ({ resolvedLanguage: "en" }));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: translate,
-    i18n: { resolvedLanguage: "en" },
+    i18n: i18nState,
   }),
 }));
+
+afterEach(() => {
+  i18nState.resolvedLanguage = "en";
+});
 
 const MAX_TEMPERATURE_GROUP = WEATHER_TEMPERATURE_GROUPS.find(
   (group) => group.id === "maxTemperature",
@@ -49,6 +55,25 @@ describe("WeatherTemperatureGroupCell", () => {
     expect(markup).toContain(
       "home.sections.forecast.weatherDetails.metrics.humidityAtMaxPct | ",
     );
+  });
+
+  it("renders the peak time in the selected language", () => {
+    i18nState.resolvedLanguage = "zh-CN";
+    const details: DayWeatherDetails = {
+      maxTempC: 29.6,
+      maxTempTimeLocal: "14:00",
+    };
+
+    const markup = renderToStaticMarkup(
+      <MantineProvider>
+        <WeatherTemperatureGroupCell
+          group={MAX_TEMPERATURE_GROUP}
+          details={details}
+        />
+      </MantineProvider>,
+    );
+
+    expect(markup).toContain("@ 14时");
   });
 
   it("does not render peak time without a maximum temperature", () => {

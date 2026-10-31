@@ -63,7 +63,7 @@ export function SectionCard({
               wrap="wrap"
             >
               {titleElement}
-              <Box>{actions}</Box>
+              <Box ml="auto">{actions}</Box>
             </Flex>
           ) : (
             titleElement

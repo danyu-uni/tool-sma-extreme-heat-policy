@@ -10,7 +10,8 @@ import { formatLocalTimeLabel } from "@/lib/localTimeLabel";
 function formatNumericValue(value: number, decimals: number): string {
   const formatted = value.toFixed(decimals);
 
-  // Small negatives round to "-0.0"; a zero reading carries no sign.
+  // Small negatives round to "-0.0", or "-0" for whole-number metrics such as
+  // humidity; a zero reading carries no sign.
   return Number(formatted) === 0 ? (0).toFixed(decimals) : formatted;
 }
 
