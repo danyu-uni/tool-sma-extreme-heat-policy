@@ -110,6 +110,16 @@ def _to_finite_float_or_none(value: Any) -> float | None:
     return parsed if parsed is not None and math.isfinite(parsed) else None
 
 
+def _to_wind_speed_or_none(value: Any) -> float | None:
+    """Convert weather-detail wind speed, treating negatives as missing.
+
+    Wind-height scaling rejects negative speeds, so keeping one would fail daily weather.
+    """
+
+    parsed = _to_finite_float_or_none(value)
+    return parsed if parsed is not None and parsed >= 0 else None
+
+
 def _resolve_provider_timezone(payload: dict[str, Any]) -> tuple[str, ZoneInfo]:
     """Extract and validate the provider timezone used by hourly timestamps."""
 
@@ -344,7 +354,7 @@ def _select_calendar_hours(
                 time_local=timestamp.astimezone(provider_time_zone),
                 tdb=_to_finite_float_or_none(series_data["temperature_2m"][idx]),
                 rh=_to_finite_float_or_none(series_data["relative_humidity_2m"][idx]),
-                v_z1=_to_finite_float_or_none(series_data["wind_speed_10m"][idx]),
+                v_z1=_to_wind_speed_or_none(series_data["wind_speed_10m"][idx]),
                 uv_index=_to_finite_float_or_none(uv_index_values[idx]),
             )
             for idx, timestamp in enumerate(timestamps)
@@ -370,6 +380,8 @@ def _select_provider_daily(payload: dict[str, Any]) -> list[ProviderDailyWeather
         return []
 
     raw_daily_units = payload.get("daily_units")
+    if not isinstance(raw_daily_units, dict):
+        LOGGER.warning("Ignoring Open-Meteo daily_units that is missing or not an object")
     daily_units = raw_daily_units if isinstance(raw_daily_units, dict) else {}
     series_data = {
         field_name: _extract_optional_daily_series(

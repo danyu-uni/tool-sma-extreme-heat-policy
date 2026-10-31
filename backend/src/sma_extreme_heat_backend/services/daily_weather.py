@@ -41,13 +41,15 @@ def _build_day(
     date_local: date,
     hours: list[CalendarHourlyWeatherPoint],
     daily: ProviderDailyWeather | None,
+    model_wind_speed: Callable[[float], float],
 ) -> DailyWeatherSummary:
     """Combine one day's hourly-derived stats with the provider's daily row."""
 
     max_temp_hour = _select_extreme_hour(hours, lambda hour: hour.tdb, pick_max=True)
     min_temp_hour = _select_extreme_hour(hours, lambda hour: hour.tdb, pick_max=False)
     max_uv_hour = _select_extreme_hour(hours, lambda hour: hour.uv_index, pick_max=True)
-    wind_values = [hour.v_z1 for hour in hours if hour.v_z1 is not None]
+    # Average the model-height wind so the panel matches the risk calculation.
+    wind_values = [model_wind_speed(hour.v_z1) for hour in hours if hour.v_z1 is not None]
 
     return DailyWeatherSummary(
         date=date_local,
@@ -71,12 +73,14 @@ def build_daily_weather(
     *,
     calendar_hours: list[CalendarHourlyWeatherPoint],
     daily: list[ProviderDailyWeather],
+    model_wind_speed: Callable[[float], float],
 ) -> list[DailyWeatherSummary]:
     """Build per-day weather details from full-calendar-day hours and provider daily rows.
 
     Hourly stats use every provider hour of the local day, not the risk-trimmed forecast
     window. A day appears when either source has data, so a missing or invalid daily
-    block only clears daylight and precipitation.
+    block only clears daylight and precipitation. `model_wind_speed` converts provider
+    10 m wind to the risk model's height before averaging.
     """
 
     hours_by_date: dict[date, list[CalendarHourlyWeatherPoint]] = {}
@@ -89,6 +93,7 @@ def build_daily_weather(
             date_local=date_local,
             hours=hours_by_date.get(date_local, []),
             daily=daily_by_date.get(date_local),
+            model_wind_speed=model_wind_speed,
         )
         for date_local in sorted(hours_by_date.keys() | daily_by_date.keys())
     ]

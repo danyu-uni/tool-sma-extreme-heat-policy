@@ -668,6 +668,8 @@ async def test_risk_service_returns_daily_weather_from_provider_details(
     assert summary.cumulative_rainfall_mm == pytest.approx(3.2)
     assert summary.max_temp_c == pytest.approx(31.0)
     assert summary.uv_index_max == pytest.approx(9.0)
+    # 2.0 m/s at 10 m, scaled to the risk model's 1.1 m height.
+    assert summary.avg_wind_speed_ms == pytest.approx(1.36)
 
 
 async def test_risk_service_uses_only_height_scaled_wind_for_higher_values(

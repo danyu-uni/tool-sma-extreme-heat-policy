@@ -37,6 +37,12 @@ def _hours(
     ]
 
 
+def _unscaled_wind(v_z1: float) -> float:
+    """Leave wind unchanged; height scaling is covered by the risk service tests."""
+
+    return v_z1
+
+
 def _daily(date_local: date) -> ProviderDailyWeather:
     return ProviderDailyWeather(
         date_local=date_local,
@@ -59,7 +65,9 @@ def test_build_daily_weather_aggregates_full_calendar_day() -> None:
         uv=[1.0, 8.5, 4.0],
     )
 
-    [summary] = build_daily_weather(calendar_hours=hours, daily=[_daily(date(2026, 3, 9))])
+    [summary] = build_daily_weather(
+        calendar_hours=hours, daily=[_daily(date(2026, 3, 9))], model_wind_speed=_unscaled_wind
+    )
 
     assert summary.date == date(2026, 3, 9)
     assert summary.min_temp_c == pytest.approx(10.0)
@@ -87,7 +95,7 @@ def test_build_daily_weather_uses_earliest_hour_on_temperature_tie() -> None:
         uv=[0.0, 0.0, 0.0],
     )
 
-    [summary] = build_daily_weather(calendar_hours=hours, daily=[])
+    [summary] = build_daily_weather(calendar_hours=hours, daily=[], model_wind_speed=_unscaled_wind)
 
     assert summary.max_temp_c == pytest.approx(30.0)
     assert summary.max_temp_time_local == "08:00"
@@ -104,7 +112,7 @@ def test_build_daily_weather_groups_hours_by_provider_local_date() -> None:
         uv=[0.0, 6.0],
     )
 
-    summaries = build_daily_weather(calendar_hours=hours, daily=[])
+    summaries = build_daily_weather(calendar_hours=hours, daily=[], model_wind_speed=_unscaled_wind)
 
     assert [summary.date for summary in summaries] == [date(2026, 3, 9), date(2026, 3, 10)]
     assert summaries[1].max_temp_c == pytest.approx(28.0)
@@ -124,7 +132,7 @@ def test_build_daily_weather_keeps_hourly_details_without_provider_daily_rows() 
         uv=[7.5],
     )
 
-    [summary] = build_daily_weather(calendar_hours=hours, daily=[])
+    [summary] = build_daily_weather(calendar_hours=hours, daily=[], model_wind_speed=_unscaled_wind)
 
     assert summary.max_temp_c == pytest.approx(31.0)
     assert summary.uv_index_max == pytest.approx(7.5)
@@ -136,7 +144,9 @@ def test_build_daily_weather_keeps_hourly_details_without_provider_daily_rows() 
 
 
 def test_build_daily_weather_keeps_provider_daily_row_without_hours() -> None:
-    [summary] = build_daily_weather(calendar_hours=[], daily=[_daily(date(2026, 3, 9))])
+    [summary] = build_daily_weather(
+        calendar_hours=[], daily=[_daily(date(2026, 3, 9))], model_wind_speed=_unscaled_wind
+    )
 
     assert summary.date == date(2026, 3, 9)
     assert summary.sunrise_local == "06:30"

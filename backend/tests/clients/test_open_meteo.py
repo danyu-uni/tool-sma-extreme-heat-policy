@@ -674,6 +674,35 @@ async def test_fetch_weather_forecast_returns_untrimmed_local_calendar_hours() -
     assert [hour.uv_index for hour in weather.calendar_hours] == [0.0, 6.0]
 
 
+async def test_fetch_weather_forecast_clears_negative_calendar_hour_wind() -> None:
+    """A negative wind outside the risk window is missing in weather details only."""
+
+    now = datetime.now(tz=UTC).replace(minute=0, second=0, microsecond=0)
+    earlier = now - timedelta(hours=5)
+    payload = _hourly_payload(
+        times=[earlier, now],
+        tdb=[12.0, 28.0],
+        rh=[70.0, 30.0],
+        wind=[-1.0, 4.0],
+        radiation=[0.0, 500.0],
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=payload)
+
+    client, mock_client = _build_client(handler)
+
+    weather = await client.fetch_weather_forecast(
+        latitude=-33.847,
+        longitude=151.067,
+        timezone_name="UTC",
+    )
+    await mock_client.aclose()
+
+    assert [point.v_z1 for point in weather.points] == [4.0]
+    assert [hour.v_z1 for hour in weather.calendar_hours] == [None, 4.0]
+
+
 async def test_fetch_weather_forecast_returns_provider_daily_rows() -> None:
     """Daily rows should be parsed alongside hourly points."""
 
@@ -839,8 +868,48 @@ async def test_fetch_weather_forecast_clears_precipitation_when_daily_units_are_
     assert row.sunset_local == "19:45"
     assert row.precipitation_probability_max_pct is None
     assert row.precipitation_sum_mm is None
+    assert "daily_units that is missing or not an object" in caplog.text
     assert "daily.precipitation_probability_max with unexpected unit" in caplog.text
     assert "daily.precipitation_sum with unexpected unit" in caplog.text
+
+
+async def test_fetch_weather_forecast_skips_only_the_daily_row_with_an_invalid_date(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A malformed daily date drops only that row; other days keep daylight and precipitation."""
+
+    now = datetime.now(tz=UTC).replace(minute=0, second=0, microsecond=0)
+    payload = _hourly_payload(
+        times=[now, now + timedelta(days=1)],
+        tdb=[31.0, 30.0],
+        rh=[62.0, 60.0],
+        wind=[1.5, 1.4],
+        radiation=[720.0, 700.0],
+    )
+    payload["daily"]["time"][0] = "2026-13-40"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=payload)
+
+    client, mock_client = _build_client(handler)
+
+    with caplog.at_level("WARNING"):
+        weather = await client.fetch_weather_forecast(
+            latitude=-33.847,
+            longitude=151.067,
+            timezone_name="UTC",
+        )
+    await mock_client.aclose()
+
+    assert len(weather.points) == 2
+    assert len(weather.daily) == 1
+    row = weather.daily[0]
+    assert row.date_local == (now + timedelta(days=1)).date()
+    assert row.sunrise_local == "06:30"
+    assert row.sunset_local == "19:45"
+    assert row.precipitation_probability_max_pct == pytest.approx(80.0)
+    assert row.precipitation_sum_mm == pytest.approx(2.5)
+    assert "invalid date format for 2026-13-40" in caplog.text
 
 
 @pytest.mark.parametrize(

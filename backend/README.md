@@ -227,10 +227,9 @@ Example response:
        warning level and only sets that output to `null` for every day.
      - a missing `daily` block or `daily.time` series is logged at warning
        level and leaves those four outputs `null` for every day.
-     - a daily row with an invalid date is logged and skipped. If hourly data
-       covers that date, the day is still returned with its hourly-derived
-       values, but its `sunrise_local`, `sunset_local`, `precip_prob_max_pct`
-       and `cumulative_rainfall_mm` are `null`.
+     - a daily row with an invalid date is logged and skipped. Days built from
+       hourly data still appear, with `sunrise_local`, `sunset_local`,
+       `precip_prob_max_pct` and `cumulative_rainfall_mm` set to `null`.
      - an invalid sunrise or sunset is logged and only clears that output.
        A non-numeric or non-finite `precipitation_probability_max` or
        `precipitation_sum` value sets only that output to `null` without
@@ -240,7 +239,10 @@ Example response:
      returned as `null`; the keys are always present.
    - `daily_weather` also includes calendar-day temperature, humidity, UV max
      (value and time), and average wind derived from the full provider hourly
-     series (not the risk-trimmed `forecast[]` window).
+     series (not the risk-trimmed `forecast[]` window). `avg_wind_speed_ms` is
+     the average at the risk model's 1.1 m height, converted from
+     `wind_speed_10m` the same way as the risk input. Negative provider wind
+     speeds are treated as invalid and left out of the average.
    - When multiple hours share the same max/min temperature or max UV index,
      the earliest local hour that day is used for the reported time.
 3. Resolve the IANA timezone from `latitude` and `longitude`, then require the

@@ -125,6 +125,7 @@ class RiskService:
             daily_weather=build_daily_weather(
                 calendar_hours=weather.calendar_hours,
                 daily=weather.daily,
+                model_wind_speed=lambda v_z1: self._resolve_model_wind_speed(vr=v_z1),
             ),
         )
 
