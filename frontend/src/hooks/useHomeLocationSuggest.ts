@@ -15,7 +15,6 @@ import {
   shouldOpenPrefilledLocationDropdown,
   toPrefilledLocationSuggestQuery,
 } from "@/domain/locationSearch";
-import { createLatestAbortableRequestController } from "@/lib/latestAbortableRequest";
 import { retrieveAndSelectLocation } from "@/hooks/homeLocationRetrieve";
 import { useHomeStore } from "@/store/homeStore";
 
@@ -136,9 +135,8 @@ export function useHomeLocationSuggest(): UseHomeLocationSuggestResult {
     (state) => state.markPrefilledLocationNotMatched,
   );
   const [hasRetrieveError, setHasRetrieveError] = useState(false);
-  const retrieveController = useMemo(
-    () => createLatestAbortableRequestController(),
-    [],
+  const retrieveController = useHomeStore(
+    (state) => state.locationRequestController,
   );
 
   const query = locationSearchInput.trim();
@@ -238,15 +236,18 @@ export function useHomeLocationSuggest(): UseHomeLocationSuggestResult {
       return;
     }
 
+    const request = retrieveController.start();
     void retrieveAndSelectLocation({
       selectedSuggestion,
       hasMapboxToken,
       mapboxAccessToken,
-      request: retrieveController.start(),
+      request,
       selectLocation,
       setHasRetrieveError,
     }).finally(() => {
-      finishPrefilledLocationResolve();
+      if (!request.signal.aborted) {
+        finishPrefilledLocationResolve();
+      }
     });
   }, [
     finishPrefilledLocationResolve,
@@ -311,15 +312,16 @@ export function useHomeLocationSuggest(): UseHomeLocationSuggestResult {
       startPrefilledLocationResolve();
     }
 
+    const request = retrieveController.start();
     void retrieveAndSelectLocation({
       selectedSuggestion,
       hasMapboxToken,
       mapboxAccessToken,
-      request: retrieveController.start(),
+      request,
       selectLocation,
       setHasRetrieveError,
     }).finally(() => {
-      if (shouldFinishPrefilledResolve) {
+      if (shouldFinishPrefilledResolve && !request.signal.aborted) {
         finishPrefilledLocationResolve();
       }
     });

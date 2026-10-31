@@ -9,12 +9,10 @@ import { SaveLocationModal } from "@/components/home/SaveLocationModal";
 import { SportImagePreview } from "@/components/home/SportImagePreview";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { CONTENT_GAP } from "@/config/uiLayout";
+import type { HomeLocationErrorReason } from "@/domain/homeErrorMap";
 import { isSuggestionAlreadySaved } from "@/domain/savedLocation";
 import { sports } from "@/domain/sport";
-import {
-  useHomeLocationSuggest,
-  type LocationSuggestErrorReason,
-} from "@/hooks/useHomeLocationSuggest";
+import { useHomeLocationSuggest } from "@/hooks/useHomeLocationSuggest";
 import {
   getSportImageFailureUrl,
   type SportImageFailure,
@@ -23,7 +21,7 @@ import { useHomeStore } from "@/store/homeStore";
 import { useSavedLocationsStore } from "@/store/savedLocationsStore";
 
 interface FiltersSectionProps {
-  onLocationError?: (reason: LocationSuggestErrorReason) => void;
+  onLocationError?: (reason: HomeLocationErrorReason) => void;
 }
 
 /**
@@ -97,6 +95,7 @@ export function FiltersSection({ onLocationError }: FiltersSectionProps) {
               canSaveCurrentLocation={selectedLocation !== null}
               hasSavedLocations={savedLocations.length > 0}
               onOpenSavedLocations={openSaveSavedLocationModal}
+              onCurrentLocationError={onLocationError}
             />
           }
           onChange={onLocationSearchInputChange}

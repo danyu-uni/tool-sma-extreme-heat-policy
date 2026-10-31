@@ -6,6 +6,10 @@ import {
   type HeatRiskProfile,
 } from "@/domain/heatRiskProfile";
 import { DEFAULT_SPORT_TYPE, type SportType } from "@/domain/sport";
+import {
+  createLatestAbortableRequestController,
+  type LatestAbortableRequestController,
+} from "@/lib/latestAbortableRequest";
 
 export type HomeChannel = "shared" | "direct";
 export type LocationPrefillSource = "url" | "persisted" | "default" | "none";
@@ -35,6 +39,7 @@ interface HomeStoreState {
   selectedLocation: LocationSuggestion | null;
   prefilledLocationResolveState: PrefilledLocationResolveState;
   locationSessionToken: string;
+  locationRequestController: LatestAbortableRequestController;
 
   bootstrap: (payload: HomeStoreBootstrapPayload) => void;
   setProfile: (profile: HeatRiskProfile) => void;
@@ -61,7 +66,7 @@ function createSessionToken(): string {
 /**
  * Central Home store for filters and applied selection.
  */
-export const useHomeStore = create<HomeStoreState>((set) => ({
+export const useHomeStore = create<HomeStoreState>((set, get) => ({
   isBootstrapped: false,
   channel: "direct",
   profile: DEFAULT_HEAT_RISK_PROFILE,
@@ -71,6 +76,7 @@ export const useHomeStore = create<HomeStoreState>((set) => ({
   selectedLocation: null,
   prefilledLocationResolveState: "idle",
   locationSessionToken: createSessionToken(),
+  locationRequestController: createLatestAbortableRequestController(),
 
   bootstrap: ({
     channel,
@@ -79,7 +85,8 @@ export const useHomeStore = create<HomeStoreState>((set) => ({
     locationSearchInput,
     locationPrefillSource,
     prefilledLocationResolveState,
-  }) =>
+  }) => {
+    get().locationRequestController.cancel();
     set({
       isBootstrapped: true,
       channel,
@@ -90,10 +97,12 @@ export const useHomeStore = create<HomeStoreState>((set) => ({
       selectedLocation: null,
       prefilledLocationResolveState,
       locationSessionToken: createSessionToken(),
-    }),
+    });
+  },
   setProfile: (profile) => set({ profile }),
   setSport: (sport) => set({ sport }),
-  setLocationSearchInput: (value) =>
+  setLocationSearchInput: (value) => {
+    get().locationRequestController.cancel();
     set((state) => {
       const selectedLocationValue = state.selectedLocation?.displayLabel ?? "";
       const shouldClearSelectedLocation =
@@ -113,14 +122,18 @@ export const useHomeStore = create<HomeStoreState>((set) => ({
           ? { locationSessionToken: createSessionToken() }
           : {}),
       };
-    }),
-  selectLocation: (suggestion) =>
+    });
+  },
+  selectLocation: (suggestion) => {
+    get().locationRequestController.cancel();
     set({
       selectedLocation: suggestion,
       locationSearchInput: suggestion.displayLabel,
       locationPrefillSource: "none",
       prefilledLocationResolveState: "idle",
-    }),
+      locationSessionToken: createSessionToken(),
+    });
+  },
   startPrefilledLocationResolve: () =>
     set({ prefilledLocationResolveState: "resolving" }),
   finishPrefilledLocationResolve: () =>
