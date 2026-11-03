@@ -16,7 +16,11 @@ export function useDashboardBootstrap(): void {
   const isBootstrapped = useDashboardStore((state) => state.isBootstrapped);
   const bootstrap = useDashboardStore((state) => state.bootstrap);
   const cards = useDashboardStore((state) => state.cards);
-  const bootstrappedCardsRef = useRef<SavedDashboardCard[] | null>(null);
+  // On a return visit the store is already bootstrapped; its cards count as
+  // loaded, so they are not written until they change.
+  const bootstrappedCardsRef = useRef<SavedDashboardCard[] | null>(
+    isBootstrapped ? cards : null,
+  );
 
   useEffect(() => {
     if (isBootstrapped) {

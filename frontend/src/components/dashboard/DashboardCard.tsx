@@ -10,7 +10,10 @@ import {
 } from "@/components/dashboard/DashboardCardMetrics";
 import { DashboardCardActions } from "@/components/dashboard/DashboardCardActions";
 import { DashboardEditScheduleModal } from "@/components/dashboard/DashboardEditScheduleModal";
-import { DashboardCardSkeleton } from "@/components/dashboard/DashboardSkeletons";
+import {
+  DashboardCardMetricsSkeleton,
+  DashboardCardSkeleton,
+} from "@/components/dashboard/DashboardSkeletons";
 import { RiskStackedBar } from "@/components/dashboard/RiskStackedBar";
 import {
   buildDashboardHomePath,
@@ -345,6 +348,7 @@ export function DashboardCard({
 }: DashboardCardProps) {
   const { t, i18n } = useTranslation();
   const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
+  const [hasShownFrame, setHasShownFrame] = useState(false);
   const sportLabel = useMemo(() => {
     const sportMeta = sports.find((meta) => meta.type === card.sport);
 
@@ -395,12 +399,18 @@ export function DashboardCard({
     title: cardTitle,
   });
 
-  if (
+  const isLoading =
     cardState.status === "loading" ||
     (viewMode === "my_schedule" && scheduledCardState?.status === "loading") ||
     (viewMode === "other_time_period" &&
-      otherPeriodCardState?.status === "loading")
-  ) {
+      otherPeriodCardState?.status === "loading");
+
+  // Once the frame has shown, a retry keeps it (and any open dialog) mounted.
+  if (!isLoading && !hasShownFrame) {
+    setHasShownFrame(true);
+  }
+
+  if (isLoading && !hasShownFrame) {
     return <DashboardCardSkeleton />;
   }
 
@@ -436,13 +446,17 @@ export function DashboardCard({
               lineClamp={2}
               actions={<DashboardCardActions {...cardActionsProps} />}
             />
-            <DashboardCardMetricsContent
-              cardState={cardState}
-              scheduledCardState={scheduledCardState}
-              otherPeriodCardState={otherPeriodCardState}
-              viewMode={viewMode}
-              intlLocale={intlLocale}
-            />
+            {isLoading ? (
+              <DashboardCardMetricsSkeleton />
+            ) : (
+              <DashboardCardMetricsContent
+                cardState={cardState}
+                scheduledCardState={scheduledCardState}
+                otherPeriodCardState={otherPeriodCardState}
+                viewMode={viewMode}
+                intlLocale={intlLocale}
+              />
+            )}
           </Stack>
           <DashboardCardHomeOverlay homePath={homePath} />
         </Paper>

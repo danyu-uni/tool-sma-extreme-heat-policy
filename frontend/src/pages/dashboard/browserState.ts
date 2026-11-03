@@ -138,8 +138,9 @@ export function savePersistedDashboardState(
     };
 
     window.localStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(payload));
-  } catch {
-    // Intentionally ignore storage errors to keep UI interaction unblocked.
+  } catch (error) {
+    // Keep UI interaction unblocked, but leave a trace like saved locations do.
+    console.warn("Failed to persist dashboard cards to localStorage.", error);
   }
 }
 

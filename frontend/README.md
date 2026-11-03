@@ -59,14 +59,16 @@ Notes:
 ## Dashboard flow
 
 - Route: `/dashboard`.
-- Users can save up to **10** location/sport cards. The frontend cap is
+- Users can save up to **10** cards, each a location, sport and weekly
+  schedule. The frontend cap is
   `MAX_DASHBOARD_CARDS` in `src/domain/dashboard.ts`.
 - Saved cards persist in `localStorage` via `src/pages/dashboard/browserState.ts`.
 - Card metrics load through one `POST /home/risk` request per **unique**
   saved location/sport pair using the same forecast pipeline as Home. React Query
   keys use the sport and normalized coordinates (not card id), so cards with the
-  same sport and location share one request. The backend in-memory cache also
-  dedupes by sport, profile, and coordinates within a single server process.
+  same sport and location share one request. The backend also caches each
+  response in memory, keyed by sport, profile, and coordinates, for
+  `RISK_CACHE_TTL_SECONDS` (default 600) within a single server process.
 - Dashboard heat-risk requests always use `DEFAULT_HEAT_RISK_PROFILE` (`ADULT`).
   Home profile selection does not apply on `/dashboard`.
 - **Now** mode shows the stacked risk bar plus today's max on each card.

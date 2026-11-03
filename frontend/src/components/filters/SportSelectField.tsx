@@ -37,8 +37,12 @@ export function SportSelectField({
   );
 
   const handleSportChange = (nextValue: string | null) => {
-    if (nextValue !== null && isSportType(nextValue)) {
-      onChange(nextValue);
+    // Clicking the selected sport deselects it (null); report it as picked
+    // again so callers can react, e.g. retry its image.
+    const pickedValue = nextValue ?? value;
+
+    if (isSportType(pickedValue)) {
+      onChange(pickedValue);
     }
   };
 

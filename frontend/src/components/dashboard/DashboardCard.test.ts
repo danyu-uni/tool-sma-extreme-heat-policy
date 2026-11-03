@@ -274,6 +274,52 @@ describe("dashboard card schedule", () => {
     );
   });
 
+  it("shows a placeholder instead of controls on the first load", () => {
+    renderCard(sydneyCard, "my_schedule", { status: "loading" });
+
+    expect(
+      document.body.querySelector('[aria-label="Edit schedule"]'),
+    ).toBeNull();
+  });
+
+  it("keeps an open schedule dialog while a failed card retries", () => {
+    renderCard({ ...sydneyCard, schedule: eveningSchedule }, "my_schedule", {
+      status: "fetch_error",
+      reason: "network",
+    });
+    const editButton = document.body.querySelector(
+      '[aria-label="Edit schedule"]',
+    ) as HTMLButtonElement;
+    act(() => editButton.click());
+
+    renderCard({ ...sydneyCard, schedule: eveningSchedule }, "my_schedule", {
+      status: "loading",
+    });
+
+    expect(document.body.textContent).toContain(
+      "Editing schedule for Soccer · Sydney",
+    );
+    expect(
+      document.body.querySelector('[aria-label="Edit schedule"]'),
+    ).not.toBeNull();
+  });
+
+  it("keeps an open delete dialog while a failed card retries", () => {
+    renderCard(sydneyCard, "now", {
+      status: "fetch_error",
+      reason: "network",
+    });
+    const deleteButton = document.body.querySelector(
+      '[aria-label="Delete"]',
+    ) as HTMLButtonElement;
+    act(() => deleteButton.click());
+
+    renderCard(sydneyCard, "now", { status: "loading" });
+
+    expect(document.body.textContent).toContain("Remove card?");
+    expect(document.body.querySelector('[aria-label="Delete"]')).not.toBeNull();
+  });
+
   it("marks an end time of midnight as the next day", () => {
     renderCard(
       {

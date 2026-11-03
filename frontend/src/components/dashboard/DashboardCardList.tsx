@@ -1,4 +1,4 @@
-import { SimpleGrid, Stack } from "@mantine/core";
+import { SimpleGrid } from "@mantine/core";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { CONTENT_GAP } from "@/config/uiLayout";
 import type { SavedDashboardCard } from "@/domain/dashboard";
@@ -6,7 +6,6 @@ import type { DashboardCardState } from "@/domain/dashboardCardState";
 import type { DashboardOtherPeriodCardState } from "@/domain/dashboardOtherPeriodCardState";
 import type { DashboardScheduledCardState } from "@/domain/dashboardScheduledCardState";
 import type { DashboardViewMode } from "@/domain/dashboardViewMode";
-import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { useDashboardStore } from "@/store/dashboardStore";
 
 interface DashboardCardListProps {
@@ -25,7 +24,7 @@ interface DashboardCardListProps {
 }
 
 /**
- * Renders saved dashboard cards in a responsive grid or vertical list.
+ * Renders saved dashboard cards in a responsive grid (one column on mobile).
  */
 export function DashboardCardList({
   cards,
@@ -35,7 +34,6 @@ export function DashboardCardList({
   getOtherPeriodCardState,
   scheduleNow,
 }: DashboardCardListProps) {
-  const isMobile = useIsMobileViewport();
   const removeCard = useDashboardStore((state) => state.removeCard);
   const moveCardUp = useDashboardStore((state) => state.moveCardUp);
   const moveCardDown = useDashboardStore((state) => state.moveCardDown);
@@ -67,14 +65,6 @@ export function DashboardCardList({
       onUpdateSchedule={(schedule) => updateCardSchedule(card.id, schedule)}
     />
   );
-
-  if (isMobile) {
-    return (
-      <Stack gap={CONTENT_GAP}>
-        {cards.map((card, index) => renderCard(card, index))}
-      </Stack>
-    );
-  }
 
   return (
     <SimpleGrid cols={{ base: 1, sm: 2 }} spacing={CONTENT_GAP}>

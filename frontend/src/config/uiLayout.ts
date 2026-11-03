@@ -32,7 +32,7 @@ export const DASHBOARD_CARD_MIN_HEIGHT = 168;
 export const BUTTON_HEIGHT_XS = rem(30);
 
 /**
- * Mirrors Mantine's `--ai-size-sm` (1.625rem, scale-aware), the size of a
+ * Mirrors Mantine's `--ai-size-sm` (1.375rem, scale-aware), the size of a
  * `size="sm"` ActionIcon. Use it for placeholders that stand in for one.
  */
-export const ACTION_ICON_SIZE_SM = rem(26);
+export const ACTION_ICON_SIZE_SM = rem(22);

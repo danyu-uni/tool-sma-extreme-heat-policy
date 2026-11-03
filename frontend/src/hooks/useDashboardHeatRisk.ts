@@ -15,6 +15,7 @@ import {
   type DashboardCardState,
 } from "@/domain/dashboardCardState";
 import {
+  COORDINATE_KEY_DECIMALS,
   toDashboardCardKey,
   type SavedDashboardCard,
 } from "@/domain/dashboard";
@@ -111,8 +112,8 @@ export function useDashboardHeatRisk(): UseDashboardHeatRiskResult {
         "dashboard",
         profile,
         card.sport,
-        card.latitude.toFixed(6),
-        card.longitude.toFixed(6),
+        card.latitude.toFixed(COORDINATE_KEY_DECIMALS),
+        card.longitude.toFixed(COORDINATE_KEY_DECIMALS),
       ],
       queryFn: async ({ signal }: { signal: AbortSignal }) => {
         const result = await fetchHeatRisk(
@@ -127,7 +128,6 @@ export function useDashboardHeatRisk(): UseDashboardHeatRiskResult {
 
         return getDashboardHeatRiskApiResponseOrThrow(result);
       },
-      enabled: true,
       placeholderData: keepPreviousData,
       retry: (failureCount: number, error: unknown) =>
         failureCount < heatRiskRetryPolicy.maxRetries &&

@@ -235,7 +235,7 @@ export function getNextWeeklyWindow(
     }
 
     const localDate = new Date(day).toISOString().slice(0, 10);
-    const resolved = scheduledWindowForLocalDay(
+    return scheduledWindowForLocalDay(
       clock,
       day,
       localDate,
@@ -243,10 +243,6 @@ export function getNextWeeklyWindow(
       window.startMinutes,
       window.endMinutes,
     );
-    if (resolved.status !== "ok") {
-      return resolved;
-    }
-    return resolved;
   }
   // A valid weekday always occurs within the inclusive eight-day search.
   throw new Error("Could not resolve a validated weekly window");

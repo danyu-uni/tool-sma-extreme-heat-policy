@@ -15,6 +15,19 @@ const TITLE_LINE_HEIGHT = 20;
 const SMALL_TEXT_LINE_HEIGHT = 14;
 
 /**
+ * Renders placeholder metrics while a shown dashboard card reloads its data.
+ */
+export function DashboardCardMetricsSkeleton() {
+  return (
+    <Stack gap={CONTENT_GAP}>
+      <Skeleton h={SMALL_TEXT_LINE_HEIGHT} w="30%" radius="sm" />
+      <Skeleton h={RISK_STACKED_BAR_CHART_HEIGHT} w="100%" radius="xl" />
+      <Skeleton h={SMALL_TEXT_LINE_HEIGHT} w="55%" radius="sm" />
+    </Stack>
+  );
+}
+
+/**
  * Renders a skeleton placeholder while a dashboard card's risk data loads.
  */
 export function DashboardCardSkeleton() {
@@ -48,9 +61,7 @@ export function DashboardCardSkeleton() {
             />
           </Group>
         </Group>
-        <Skeleton h={SMALL_TEXT_LINE_HEIGHT} w="30%" radius="sm" />
-        <Skeleton h={RISK_STACKED_BAR_CHART_HEIGHT} w="100%" radius="xl" />
-        <Skeleton h={SMALL_TEXT_LINE_HEIGHT} w="55%" radius="sm" />
+        <DashboardCardMetricsSkeleton />
       </Stack>
     </Paper>
   );

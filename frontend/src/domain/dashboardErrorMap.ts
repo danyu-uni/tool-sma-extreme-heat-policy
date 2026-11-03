@@ -1,17 +1,6 @@
 import type { HeatRiskErrorReason } from "@/api/heatRisk";
 import type { DashboardHeatRiskLocationErrorCode } from "@/api/dashboardHeatRiskQuery";
-
-const DASHBOARD_FETCH_ERROR_I18N_KEY_BY_REASON: Record<
-  HeatRiskErrorReason,
-  string
-> = {
-  missing_config: "errors.risk.missingApiBaseUrl",
-  abort: "errors.risk.network",
-  http_status: "errors.risk.network",
-  invalid_response: "errors.risk.invalidResponse",
-  network: "errors.risk.network",
-  weather_provider_unavailable: "errors.risk.weatherProvider",
-};
+import { toCalculationErrorI18nKey } from "@/domain/homeErrorMap";
 
 const DASHBOARD_LOCATION_ERROR_I18N_KEY_BY_CODE: Record<
   DashboardHeatRiskLocationErrorCode | "risk_calculation_failed",
@@ -22,16 +11,12 @@ const DASHBOARD_LOCATION_ERROR_I18N_KEY_BY_CODE: Record<
 };
 
 /**
- * Maps a dashboard card fetch failure to an i18n key.
+ * Maps a dashboard card fetch failure to an i18n key, shared with Home.
  */
 export function toDashboardFetchErrorI18nKey(
   reason: HeatRiskErrorReason | null,
 ): string | null {
-  if (!reason) {
-    return null;
-  }
-
-  return DASHBOARD_FETCH_ERROR_I18N_KEY_BY_REASON[reason] ?? null;
+  return toCalculationErrorI18nKey(reason);
 }
 
 /**

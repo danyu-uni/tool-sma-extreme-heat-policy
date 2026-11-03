@@ -41,7 +41,7 @@ interface DashboardCardActionsProps {
 }
 
 /**
- * Renders delete and reorder controls for a dashboard card.
+ * Renders edit-schedule, delete and reorder controls for a dashboard card.
  */
 export function DashboardCardActions({
   index,

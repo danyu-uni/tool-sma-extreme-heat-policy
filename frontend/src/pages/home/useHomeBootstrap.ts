@@ -119,7 +119,13 @@ export function useHomeBootstrap(): UseHomeBootstrapResult {
           bootstrapState,
         ))
     ) {
-      state.bootstrap(bootstrapState);
+      // Going Back to earlier Home filters is still in-app navigation; only
+      // the page that opened the app can come from a shared link.
+      state.bootstrap(
+        state.channel === "direct"
+          ? { ...bootstrapState, channel: "direct" }
+          : bootstrapState,
+      );
     }
   }, [bootstrapState, hasUrlState, isInAppNavigation]);
 

@@ -10,6 +10,7 @@ import { COMPACT_GAP, CONTENT_GAP } from "@/config/uiLayout";
 import { UI_INLINE_ICON_SIZE } from "@/config/uiScale";
 import { RESPONSIVE_STANDARD_TEXT_LINE_HEIGHT } from "@/config/uiTypography";
 import { MAX_DASHBOARD_CARDS } from "@/domain/dashboard";
+import { DETAILED_RECOMMENDATIONS_PATH } from "@/lib/recommendationRouteState";
 import { useDashboardStore } from "@/store/dashboardStore";
 
 const descriptionTextProps = {
@@ -36,7 +37,11 @@ export function DashboardOverviewSection() {
           i18nKey="dashboard.header.description.modes"
           components={{
             recommendationsLink: (
-              <Anchor component={Link} to="/detailed-recommendations" inherit />
+              <Anchor
+                component={Link}
+                to={DETAILED_RECOMMENDATIONS_PATH}
+                inherit
+              />
             ),
           }}
         />
